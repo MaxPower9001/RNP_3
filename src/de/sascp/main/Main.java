@@ -1,4 +1,4 @@
-package de.sascp;
+package de.sascp.main;
 
 public class Main {
 
