@@ -4,7 +4,7 @@ package de.sascp.message;
  * Created by Rene on 10.05.2016.
  */
 
-import java.io.*;
+import java.io.Serializable;
 /*
  * This class defines the different type of messages that will be exchanged between the
  * Clients and the Server.
@@ -13,13 +13,10 @@ import java.io.*;
  */
 public class ChatMessage implements Serializable {
 
-    protected static final long serialVersionUID = 1112122200L;
+    private final byte[] version = new byte[4];
+    private final byte[] messageType = new byte[4];
+    private final byte[] length = new byte[4];
 
-    // The different types of message sent by the Client
-    // WHOISIN to receive the list of the users connected
-    // MESSAGE an ordinary message
-    // LOGOUT to disconnect from the Server
-    public static final int WHOISIN = 0, MESSAGE = 1, LOGOUT = 2;
     private final int type;
     private final String message;
 

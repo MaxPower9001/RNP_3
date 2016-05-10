@@ -3,40 +3,30 @@ package de.sascp.server;
 /**
  * Created by Rene on 10.05.2016.
  */
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 
 /*
  * The server as a GUI
  */
-class ServerGUI extends JFrame implements ActionListener, WindowListener {
+public class ServerGUI extends JFrame implements WindowListener {
 
-    private static final long serialVersionUID = 1L;
-    // the stop and start buttons
-    private final JButton stopStart;
     // JTextArea for the chat room and the events
     private final JTextArea chat;
     private final JTextArea event;
-    // The port number
-    private final JTextField tPortNumber;
     // my server
     private Server server;
 
 
     // server constructor that receive the port to listen to for connection as parameter
-    private ServerGUI() {
+    public ServerGUI() {
         super("Chat Server");
         server = null;
         // in the NorthPanel the PortNumber the Start and Stop buttons
         JPanel north = new JPanel();
-        north.add(new JLabel("Port number: "));
-        tPortNumber = new JTextField("  " + 1500);
-        north.add(tPortNumber);
-        // to stop or start the server, we start with "Start"
-        stopStart = new JButton("Start");
-        stopStart.addActionListener(this);
-        north.add(stopStart);
         add(north, BorderLayout.NORTH);
 
         // the event and chat room
@@ -55,6 +45,11 @@ class ServerGUI extends JFrame implements ActionListener, WindowListener {
         addWindowListener(this);
         setSize(400, 600);
         setVisible(true);
+
+        server = new Server(this);
+        // and start it as a thread
+        new ServerRunning().start();
+
     }
 
     // append message to the two JTextArea
@@ -67,39 +62,6 @@ class ServerGUI extends JFrame implements ActionListener, WindowListener {
         event.append(str);
         event.setCaretPosition(chat.getText().length() - 1);
 
-    }
-
-    // start or stop where clicked
-    public void actionPerformed(ActionEvent e) {
-        // if running we have to stop
-        if(server != null) {
-            server.stop();
-            server = null;
-            tPortNumber.setEditable(true);
-            stopStart.setText("Start");
-            return;
-        }
-        // OK start the server
-        int port;
-        try {
-            port = Integer.parseInt(tPortNumber.getText().trim());
-        }
-        catch(Exception er) {
-            appendEvent("Invalid port number");
-            return;
-        }
-        // ceate a new Server
-        server = new Server(port, this);
-        // and start it as a thread
-        new ServerRunning().start();
-        stopStart.setText("Stop");
-        tPortNumber.setEditable(false);
-    }
-
-    // entry point to start the Server
-    public static void main(String[] arg) {
-        // start server default port 1500
-        new ServerGUI();
     }
 
     /*
@@ -135,8 +97,6 @@ class ServerGUI extends JFrame implements ActionListener, WindowListener {
         public void run() {
             server.start();         // should execute until if fails
             // the server failed
-            stopStart.setText("Start");
-            tPortNumber.setEditable(true);
             appendEvent("Server crashed\n");
             server = null;
         }
