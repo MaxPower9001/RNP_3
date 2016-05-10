@@ -17,7 +17,7 @@ import static de.sascp.protocol.Specification.*;
 /**
  * One instance of this thread will run for each client
  */
-class ClientThread extends Thread {
+class ClientThread extends Thread { // TODO in RUnnable ändern
     // the socket where to listen/talk
     final Socket socket;
     // my unique id (easier for deconnection)

@@ -159,7 +159,7 @@ public class ClientGUI extends JFrame implements ActionListener {
             DatagramSocket socket = null;
             try {
                 socket = new DatagramSocket(PORT);
-                socket.setSoTimeout(2000);
+                socket.setSoTimeout(TIMEOUT);
             } catch (SocketException e1) {
                 e1.printStackTrace();
             }
@@ -178,7 +178,7 @@ public class ClientGUI extends JFrame implements ActionListener {
                     break;
                 }
 
-//              Server found, check for correct message Type
+//              Server found, check for correct message Type TODO move to Protocol Parser & Incoming Message Handler
                 int receivedVersion = -1;
                 int receivedMessageType = -1;
                 int receivedLength = -1;

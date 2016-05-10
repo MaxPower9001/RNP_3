@@ -13,9 +13,10 @@ class Main {
 
     private Main() {
         // start Client GUI
+
         ClientGUI clientGUI = new ClientGUI();
 
-
+        // start Server GUI
         ServerGUI serverGUI = new ServerGUI();
     }
 
