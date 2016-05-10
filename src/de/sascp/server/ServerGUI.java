@@ -10,27 +10,28 @@ import java.awt.event.*;
 /*
  * The server as a GUI
  */
-public class ServerGUI extends JFrame implements ActionListener, WindowListener {
+class ServerGUI extends JFrame implements ActionListener, WindowListener {
 
     private static final long serialVersionUID = 1L;
     // the stop and start buttons
-    private JButton stopStart;
+    private final JButton stopStart;
     // JTextArea for the chat room and the events
-    private JTextArea chat, event;
+    private final JTextArea chat;
+    private final JTextArea event;
     // The port number
-    private JTextField tPortNumber;
+    private final JTextField tPortNumber;
     // my server
     private Server server;
 
 
     // server constructor that receive the port to listen to for connection as parameter
-    ServerGUI(int port) {
+    private ServerGUI() {
         super("Chat Server");
         server = null;
         // in the NorthPanel the PortNumber the Start and Stop buttons
         JPanel north = new JPanel();
         north.add(new JLabel("Port number: "));
-        tPortNumber = new JTextField("  " + port);
+        tPortNumber = new JTextField("  " + 1500);
         north.add(tPortNumber);
         // to stop or start the server, we start with "Start"
         stopStart = new JButton("Start");
@@ -98,7 +99,7 @@ public class ServerGUI extends JFrame implements ActionListener, WindowListener 
     // entry point to start the Server
     public static void main(String[] arg) {
         // start server default port 1500
-        new ServerGUI(1500);
+        new ServerGUI();
     }
 
     /*
@@ -130,7 +131,7 @@ public class ServerGUI extends JFrame implements ActionListener, WindowListener 
     /*
      * A thread to run the Server
      */
-    class ServerRunning extends Thread {
+    private class ServerRunning extends Thread {
         public void run() {
             server.start();         // should execute until if fails
             // the server failed

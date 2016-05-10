@@ -13,17 +13,17 @@ import java.util.*;
 /*
  * The server that can be run both as a console application or a GUI
  */
-public class Server {
+class Server {
     // a unique ID for each connection
     private static int uniqueId;
     // an ArrayList to keep the list of the Client
-    private ArrayList<ClientThread> al;
+    private final ArrayList<ClientThread> al;
     // if I am in a GUI
-    private ServerGUI sg;
+    private final ServerGUI sg;
     // to display time
-    private SimpleDateFormat sdf;
+    private final SimpleDateFormat sdf;
     // the port number to listen for connection
-    private int port;
+    private final int port;
     // the boolean that will be turned of to stop the server
     private boolean keepGoing;
 
@@ -32,7 +32,7 @@ public class Server {
      *  server constructor that receive the port to listen to for connection as parameter
      *  in console
      */
-    public Server(int port) {
+    private Server(int port) {
         this(port, null);
     }
 
@@ -44,7 +44,7 @@ public class Server {
         // to display hh:mm:ss
         sdf = new SimpleDateFormat("HH:mm:ss");
         // ArrayList for the Client list
-        al = new ArrayList<ClientThread>();
+        al = new ArrayList<>();
     }
 
     public void start() {
@@ -72,14 +72,12 @@ public class Server {
             // I was asked to stop
             try {
                 serverSocket.close();
-                for(int i = 0; i < al.size(); ++i) {
-                    ClientThread tc = al.get(i);
+                for (ClientThread tc : al) {
                     try {
                         tc.sInput.close();
                         tc.sOutput.close();
                         tc.socket.close();
-                    }
-                    catch(IOException ioE) {
+                    } catch (IOException ioE) {
                         // not much I can do
                     }
                 }
@@ -97,7 +95,7 @@ public class Server {
     /*
      * For the GUI to stop the server
      */
-    protected void stop() {
+    void stop() {
         keepGoing = false;
         // connect to myself as Client to exit statement
         // Socket socket = serverSocket.accept();
@@ -144,7 +142,7 @@ public class Server {
     }
 
     // for a client who logoff using the LOGOUT message
-    synchronized void remove(int id) {
+    private synchronized void remove(int id) {
         // scan the array list until we found the Id
         for(int i = 0; i < al.size(); ++i) {
             ClientThread ct = al.get(i);
@@ -190,11 +188,11 @@ public class Server {
     /** One instance of this thread will run for each client */
     class ClientThread extends Thread {
         // the socket where to listen/talk
-        Socket socket;
+        final Socket socket;
         ObjectInputStream sInput;
         ObjectOutputStream sOutput;
         // my unique id (easier for deconnection)
-        int id;
+        final int id;
         // the Username of the Client
         String username;
         // the only type of message a will receive
@@ -284,7 +282,7 @@ public class Server {
             try {
                 if(sInput != null) sInput.close();
             }
-            catch(Exception e) {};
+            catch(Exception e) {}
             try {
                 if(socket != null) socket.close();
             }

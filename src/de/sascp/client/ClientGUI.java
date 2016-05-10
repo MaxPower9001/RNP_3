@@ -14,41 +14,44 @@ import java.awt.event.*;
 /*
  * The Client with its GUI
  */
-public class ClientGUI extends JFrame implements ActionListener {
+class ClientGUI extends JFrame implements ActionListener {
 
     private static final long serialVersionUID = 1L;
     // will first hold "Username:", later on "Enter message"
-    private JLabel label;
+    private final JLabel label;
     // to hold the Username and later on the messages
-    private JTextField tf;
+    private final JTextField tf;
     // to hold the server address an the port number
-    private JTextField tfServer, tfPort;
+    private final JTextField tfServer;
+    private final JTextField tfPort;
     // to Logout and get the list of the users
-    private JButton login, logout, whoIsIn;
+    private final JButton login;
+    private final JButton logout;
+    private final JButton whoIsIn;
     // for the chat room
-    private JTextArea ta;
+    private final JTextArea ta;
     // if it is for connection
     private boolean connected;
     // the Client object
     private Client client;
     // the default port number
-    private int defaultPort;
-    private String defaultHost;
+    private final int defaultPort;
+    private final String defaultHost;
 
     // Constructor connection receiving a socket number
-    ClientGUI(String host, int port) {
+    private ClientGUI() {
 
         super("Chat Client");
-        defaultPort = port;
-        defaultHost = host;
+        defaultPort = 1500;
+        defaultHost = "localhost";
 
         // The NorthPanel with:
         JPanel northPanel = new JPanel(new GridLayout(3,1));
         // the server name anmd the port number
         JPanel serverAndPort = new JPanel(new GridLayout(1,5, 1, 3));
         // the two JTextField with default value for server address and port number
-        tfServer = new JTextField(host);
-        tfPort = new JTextField("" + port);
+        tfServer = new JTextField("localhost");
+        tfPort = new JTextField("" + 1500);
         tfPort.setHorizontalAlignment(SwingConstants.RIGHT);
 
         serverAndPort.add(new JLabel("Server Address:  "));
@@ -160,7 +163,7 @@ public class ClientGUI extends JFrame implements ActionListener {
             String portNumber = tfPort.getText().trim();
             if(portNumber.length() == 0)
                 return;
-            int port = 0;
+            int port;
             try {
                 port = Integer.parseInt(portNumber);
             }
@@ -171,7 +174,7 @@ public class ClientGUI extends JFrame implements ActionListener {
             // try creating a new Client with GUI
             client = new Client(server, port, username, this);
             // test if we can start the Client
-            if(!client.start())
+            if(client.start())
                 return;
             tf.setText("");
             label.setText("Enter your message below");
@@ -193,7 +196,7 @@ public class ClientGUI extends JFrame implements ActionListener {
 
     // to start the whole thing the server
     public static void main(String[] args) {
-        new ClientGUI("localhost", 1500);
+        new ClientGUI();
     }
 
 }

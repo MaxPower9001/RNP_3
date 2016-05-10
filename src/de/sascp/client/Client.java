@@ -13,7 +13,7 @@ import java.util.*;
 /*
  * The Client that can be run both as a console or a GUI
  */
-public class Client  {
+class Client  {
 
     // for I/O
     private ObjectInputStream sInput;		// to read from the socket
@@ -21,11 +21,12 @@ public class Client  {
     private Socket socket;
 
     // if I use a GUI or not
-    private ClientGUI cg;
+    private final ClientGUI cg;
 
     // the server, the port and the username
-    private String server, username;
-    private int port;
+    private final String server;
+    private final String username;
+    private final int port;
 
     /*
      *  Constructor called by console mode
@@ -33,7 +34,7 @@ public class Client  {
      *  port: the port number
      *  username: the username
      */
-    Client(String server, int port, String username) {
+    private Client(String server, int port, String username) {
         // which calls the common constructor with the GUI set to null
         this(server, port, username, null);
     }
@@ -61,7 +62,7 @@ public class Client  {
         // if it failed not much I can so
         catch(Exception ec) {
             display("Error connectiong to server:" + ec);
-            return false;
+            return true;
         }
 
         String msg = "Connection accepted " + socket.getInetAddress() + ":" + socket.getPort();
@@ -75,7 +76,7 @@ public class Client  {
         }
         catch (IOException eIO) {
             display("Exception creating new Input/output Streams: " + eIO);
-            return false;
+            return true;
         }
 
         // creates the Thread to listen from the server
@@ -89,10 +90,10 @@ public class Client  {
         catch (IOException eIO) {
             display("Exception doing login : " + eIO);
             disconnect();
-            return false;
+            return true;
         }
         // success we inform the caller that it worked
-        return true;
+        return false;
     }
 
     /*
@@ -194,7 +195,7 @@ public class Client  {
         Client client = new Client(serverAddress, portNumber, userName);
         // test if we can start the connection to the Server
         // if it failed nothing we can do
-        if(!client.start())
+        if(client.start())
             return;
 
         // wait for messages from user
@@ -226,7 +227,7 @@ public class Client  {
      * a class that waits for the message from the server and append them to the JTextArea
      * if we have a GUI or simply System.out.println() it in console mode
      */
-    class ListenFromServer extends Thread {
+    private class ListenFromServer extends Thread {
 
         public void run() {
             while(true) {
