@@ -1,9 +1,5 @@
 package de.sascp.client;
 
-/**
- * Created by Rene on 10.05.2016.
- */
-
 import de.sascp.message.ChatMessage;
 
 import java.io.IOException;
@@ -24,8 +20,8 @@ class Client  {
     private final String server;
     private final String username;
     // for I/O
-    private ObjectInputStream sInput;		// to read from the socket
-    private ObjectOutputStream sOutput;		// to write on the socket
+    private ObjectInputStream sInput;		// to read from the socket TODO ändern in InputStream
+    private ObjectOutputStream sOutput;		// to write on the socket TODO ändern in OutputStream
     private Socket socket;
 
 
@@ -96,7 +92,7 @@ class Client  {
     }
 
     /*
-     * To send a message to the server
+     * To send a message to the server // TODO vorher umwandeln in byte[] Stream
      */
     void sendMessage(ChatMessage msg) {
         try {

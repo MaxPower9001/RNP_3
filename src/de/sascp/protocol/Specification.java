@@ -18,6 +18,13 @@ public class Specification {
     public static final int LOGOUT = 1002;
 
     // actual message types
-    public static final int REQFINDSERVER = 1;
-    public static final int RESFINDSERVER = 2;
+    public static final int REQFINDSERVER        = 1;
+    public static final int RESFINDSERVER        = 2;
+    public static final int REQLOGIN             = 3;
+    public static final int UPDATECLIENT         = 4;
+    public static final int SENDMSGGRP           = 5;
+    public static final int SENDMSGUSR           = 6;
+    public static final int REQHEARTBEAT         = 7;
+    public static final int RESHEARTBEAT         = 8;
+    public static final int ERRORMSGNOTDELIVERED = 9;
 }

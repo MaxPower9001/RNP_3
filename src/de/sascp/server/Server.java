@@ -58,7 +58,8 @@ class Server {
                     break;
                 ClientThread t = new ClientThread(socket, this);  // make a thread of it
                 al.add(t);									// save it in the ArrayList
-                t.start();
+                Thread thread = new Thread(t);
+                thread.start();
             }
             // I was asked to stop
             try {

@@ -17,14 +17,14 @@ import static de.sascp.protocol.Specification.*;
 /**
  * One instance of this thread will run for each client
  */
-class ClientThread extends Thread { // TODO in RUnnable ändern
+class ClientThread implements Runnable {
     // the socket where to listen/talk
     final Socket socket;
     // my unique id (easier for deconnection)
     final int id;
     private final Server parent;
-    ObjectInputStream sInput;
-    ObjectOutputStream sOutput;
+    ObjectInputStream sInput; //TODO ändern in InputStream
+    ObjectOutputStream sOutput; //TODO ändern in OutputStream
     // the Username of the Client
     String username;
     // the date I connect
