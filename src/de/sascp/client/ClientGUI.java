@@ -4,17 +4,14 @@ package de.sascp.client;
  * Created by Rene on 10.05.2016.
  */
 
-import de.sascp.message.ChatMessage;
+import de.sascp.message.subTypes.reqFindServer;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.ByteBuffer;
 
 import static de.sascp.protocol.Specification.*;
@@ -135,24 +132,25 @@ public class ClientGUI extends JFrame implements ActionListener {
         Object o = e.getSource();
         // if it is the Logout button
         if(o == logout) {
-            client.sendMessage(new ChatMessage(LOGOUT, ""));
+            client.display("Logout gibs nicht im SASCP - hier wird gechattet bis die Finger glühen!");
             return;
         }
         // if it the who is in button
         if(o == whoIsIn) {
-            client.sendMessage(new ChatMessage(WHOISIN, ""));
+            client.sendMessage();
             return;
         }
 
         // ok it is coming from the JTextField
         if(connected) {
             // just have to send the message
-            client.sendMessage(new ChatMessage(MESSAGE, tf.getText()));
+            client.sendMessage();
             tf.setText("");
             return;
         }
 
         if (o == findServer) {
+            client.sendMessage(new reqFindServer(new Inet4Address("255.255.255.255")));
             // Client wants to find a Server
             // Send broadcast and wait for answer
             boolean serverFound = false;

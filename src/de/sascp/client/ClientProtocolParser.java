@@ -1,7 +1,6 @@
-package de.sascp.util;
+package de.sascp.client;
 
-import de.sascp.client.Client;
-import de.sascp.message.subTypes.reqFindServer;
+import de.sascp.message.subTypes.resFindServer;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -12,11 +11,11 @@ import static de.sascp.protocol.Specification.*;
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
  * against the Protocol Specification
  */
-public class ProtocolParser implements Runnable {
+public class ClientProtocolParser implements Runnable {
 
     Client parent;
 
-    public ProtocolParser(Client parent) {
+    public ClientProtocolParser(Client parent) {
         this.parent = parent;
     }
     /*
@@ -69,7 +68,6 @@ public class ProtocolParser implements Runnable {
                 break;
             }
 
-
             version = fromArray(headerBytes, 0); // Version number
             messageType = fromArray(headerBytes, 4); // MessageType
             length = fromArray(headerBytes, 8);  // Length
@@ -91,9 +89,12 @@ public class ProtocolParser implements Runnable {
                     break;
                 }
                 switch (messageType) {
-                    case (REQFINDSERVER):
-                        parent.incomingMessageQueue.add(new reqFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+                    case (RESFINDSERVER):
+                        parent.incomingMessageQueue.add(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+                        parent.incomingMessageQueue.notify();
                         break;
+                    case (REQHEARTBEAT):
+
                 }
             }
         }

@@ -2,6 +2,8 @@ package de.sascp.util;
 
 import de.sascp.message.ChatMessage;
 
+import java.io.OutputStream;
+
 import static de.sascp.protocol.Specification.UPDATECLIENT;
 
 /**
@@ -13,18 +15,18 @@ public class MessageBuilder {
      * @param chatMessage - ChatMessage Object, which will be converted
      * @return - byte[] Stream for outgoing data
      */
-    public static byte[] buildMessage(ChatMessage chatMessage){
-        int size;
+    public static boolean buildMessage(ChatMessage chatMessage, OutputStream outputStream) {
+        int size = 0;
         if (chatMessage.getMessageType() != UPDATECLIENT) {
             size = chatMessage.getLength();
         } else {
-            size = chat
+
         }
 
         byte[] outgoingMessage = new byte[size];
 
         // TODO
 
-        return outgoingMessage;
+        return false;
     }
 }

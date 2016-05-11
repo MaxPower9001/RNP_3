@@ -2,15 +2,14 @@ package de.sascp.client;
 
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
-import de.sascp.util.IncomingMessageHandler;
-import de.sascp.util.ProtocolParser;
+import de.sascp.util.MessageBuilder;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static de.sascp.protocol.Specification.PORT;
-import static de.sascp.util.MessageBuilder.buildMessage;
 
 /*
  * The Client that can be run both as a console or a GUI
@@ -19,15 +18,17 @@ public class Client implements ChatProgramm {
     public final IncomingMessageHandler incomingMessageHandler;
     // if I use a GUI or not
     public final ClientGUI cg;
-    private final ProtocolParser protocolParser;
+    private final ClientProtocolParser clientProtocolParser;
     // the server and the username
     private final String server;
     private final String username;
     public ConcurrentLinkedQueue<ChatMessage> incomingMessageQueue = new ConcurrentLinkedQueue<>();
+    public ConcurrentLinkedQueue<ChatMessage> controlDataQueue = new ConcurrentLinkedQueue<>();
     // for I/O
     public InputStream sInput;        // to read from the socket TODO ändern in InputStream
     public Socket socket;
-    private OutputStream sOutput;		// to write on the socket TODO ändern in OutputStream
+    OutputStream sOutput;        // to write on the socket TODO ändern in OutputStream
+    private ArrayList<Runnable> waiterList = new ArrayList<>();
 
 
     /*
@@ -36,7 +37,7 @@ public class Client implements ChatProgramm {
      */
     Client(String server, String username, ClientGUI cg) {
         this.incomingMessageHandler = new IncomingMessageHandler(this);
-        this.protocolParser = new ProtocolParser(this);
+        this.clientProtocolParser = new ClientProtocolParser(this);
         this.server = server;
         this.username = username;
         // save if we are in GUI mode or not
@@ -72,7 +73,8 @@ public class Client implements ChatProgramm {
         }
 
         // creates the Thread to listen from the server
-        new Thread(protocolParser).start();
+        new Thread(clientProtocolParser).start();
+        new Thread(incomingMessageHandler).start();
         // Send our username to the server this is the only message that we
         // will send as a String. All other messages will be ChatMessage objects
 //        try
@@ -99,12 +101,7 @@ public class Client implements ChatProgramm {
      * To send a message to the server // TODO vorher umwandeln in byte[] Stream
      */
     void sendMessage(ChatMessage msg) {
-        try {
-            sOutput.write(buildMessage(msg));
-        }
-        catch(IOException e) {
-            display("Exception writing to server: " + e);
-        }
+        MessageBuilder.buildMessage(msg);
     }
 
     /*
