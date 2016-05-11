@@ -4,6 +4,8 @@ package de.sascp.server;
  * Created by Rene on 10.05.2016.
  */
 
+import de.sascp.marker.ChatProgramm;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,11 +18,11 @@ import static de.sascp.protocol.Specification.PORT;
 /*
  * The server that can be run both as a console application or a GUI
  */
-class Server {
+class Server implements ChatProgramm {
     // a unique ID for each connection
     static int uniqueId;
     // an ArrayList to keep the list of the Client
-    private final ArrayList<ClientThread> al;
+    private final ArrayList<ClientConnectionListener> al;
     // if I am in a GUI
     private final ServerGUI sg;
     // to display time
@@ -56,7 +58,7 @@ class Server {
                 // if I was asked to stop
                 if(!keepGoing)
                     break;
-                ClientThread t = new ClientThread(socket, this);  // make a thread of it
+                ClientConnectionListener t = new ClientConnectionListener(socket, this);  // make a thread of it
                 al.add(t);									// save it in the ArrayList
                 Thread thread = new Thread(t);
                 thread.start();
@@ -64,7 +66,7 @@ class Server {
             // I was asked to stop
             try {
                 serverSocket.close();
-                for (ClientThread tc : al) {
+                for (ClientConnectionListener tc : al) {
                     try {
                         tc.sInput.close();
                         tc.sOutput.close();
@@ -124,7 +126,7 @@ class Server {
         // we loop in reverse order in case we would have to remove a Client
         // because it has disconnected
         for(int i = al.size(); --i >= 0;) {
-            ClientThread ct = al.get(i);
+            ClientConnectionListener ct = al.get(i);
             // try to write to the Client if it fails remove it from the list
             if(!ct.writeMsg(messageLf)) {
                 al.remove(i);
@@ -137,7 +139,7 @@ class Server {
     synchronized void remove(int id) {
         // scan the array list until we found the Id
         for(int i = 0; i < al.size(); ++i) {
-            ClientThread ct = al.get(i);
+            ClientConnectionListener ct = al.get(i);
             // found it
             if(ct.id == id) {
                 al.remove(i);
@@ -146,7 +148,7 @@ class Server {
         }
     }
 
-    public ArrayList<ClientThread> getAl() {
+    public ArrayList<ClientConnectionListener> getAl() {
         return al;
     }
 

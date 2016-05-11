@@ -112,7 +112,7 @@ public class ClientGUI extends JFrame implements ActionListener {
     }
     // called by the GUI is the connection failed
     // we reset our buttons, label, textfield
-    void connectionFailed() {
+    public void connectionFailed() {
         findServer.setEnabled(true);
         login.setEnabled(true);
         logout.setEnabled(false);
@@ -209,7 +209,7 @@ public class ClientGUI extends JFrame implements ActionListener {
                 return;
 
             // try creating a new Client with GUI
-            client = new Client(server, username, this);
+            client = new Client(incomingMessageHandler, server, username, this);
             // test if we can start the Client
             if(client.start())
                 return;

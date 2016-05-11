@@ -1,8 +1,5 @@
 package de.sascp.server;
 
-/**
- * Created by Rene on 10.05.2016.
- */
 
 import de.sascp.message.ChatMessage;
 
@@ -17,7 +14,7 @@ import static de.sascp.protocol.Specification.*;
 /**
  * One instance of this thread will run for each client
  */
-class ClientThread implements Runnable {
+class ClientConnectionListener implements Runnable {
     // the socket where to listen/talk
     final Socket socket;
     // my unique id (easier for deconnection)
@@ -31,7 +28,7 @@ class ClientThread implements Runnable {
     private String date;
 
     // Constructore
-    ClientThread(Socket socket, Server parent) {
+    ClientConnectionListener(Socket socket, Server parent) {
         this.parent = parent;
         // a unique id
         id = ++Server.uniqueId;
@@ -71,16 +68,11 @@ class ClientThread implements Runnable {
             } catch (ClassNotFoundException e2) {
                 break;
             }
-            // the messaage part of the ChatMessage
-            String message = cm.getMessage();
 
             // Switch on the type of message receive
-            switch (cm.getType()) {
+            switch (cm.getMessageType()) {
                 case REQFINDSERVER:
                     // TODO Antwort auf REQFINDSERVER
-                    break;
-                case MESSAGE:
-                    parent.broadcast(username + ": " + message);
                     break;
                 case LOGOUT:
                     parent.display(username + " disconnected with a LOGOUT message.");
@@ -90,7 +82,7 @@ class ClientThread implements Runnable {
                     writeMsg("List of the users connected at " + parent.getSdf().format(new Date()) + "\n");
                     // scan al the users connected
                     for (int i = 0; i < parent.getAl().size(); ++i) {
-                        ClientThread ct = parent.getAl().get(i);
+                        ClientConnectionListener ct = parent.getAl().get(i);
                         writeMsg((i + 1) + ") " + ct.username + " since " + ct.date);
                     }
                     break;

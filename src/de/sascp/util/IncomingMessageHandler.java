@@ -1,28 +1,28 @@
 package de.sascp.util;
 
+import de.sascp.client.Client;
 import de.sascp.message.ChatMessage;
+import de.sascp.message.subTypes.resHeartbeat;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static de.sascp.protocol.Specification.RESHEARTBEAT;
-
 /**
  * Converts byte[] Streams checked by the Protocol Parser into ChatMessage Objects and answers Heartbeat-Requests
  */
-public class IncomingMessageHandler {
-    /**
-     * Converts a previously checked byte[] Stream into a ChatMessage Object
-     * @param incomingData - Protocol conform byte[] Stream
-     * @return ChatMessage Object containing byte[] Stream Data
-     */
-    public static ChatMessage convertIncomingByteStream(byte[] incomingData){
-        int messageType = 0;
-        String messageString = "";
+public class IncomingMessageHandler implements Runnable {
+
+    Client parent;
+
+    public IncomingMessageHandler(Client parent) {
+        this.parent = parent;
+    }
+
+
+    public static void handleIncomingMessage(ChatMessage chatMessage) {
 
         // TODO
 
-        return new ChatMessage(messageType, messageString);
     }
 
     /**
@@ -31,12 +31,19 @@ public class IncomingMessageHandler {
      * @return returns true, if message send successfully. returns false,
      *          if IOException thrown
      */
-    public static boolean answerHeartbeat(OutputStream outputStream){
+    public static boolean answerHeartbeat(int targetIP, int targetPort, OutputStream outputStream) {
         try{
-            outputStream.write(MessageBuilder.buildMessage(new ChatMessage(RESHEARTBEAT,"")));
+            outputStream.write(MessageBuilder.buildMessage(new resHeartbeat(targetIP, targetPort)));
         } catch (IOException e) {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public void run() {
+        while (true) {
+
+        }
     }
 }

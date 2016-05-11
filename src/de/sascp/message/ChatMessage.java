@@ -1,22 +1,24 @@
 package de.sascp.message;
 
 import java.io.Serializable;
+import java.net.InetAddress;
+
+import static de.sascp.protocol.Specification.VERSION;
 
 public class ChatMessage implements Serializable {
+
+    private final int sourceIP;
+    private final int sourcePort;
 
     private final int version;
     private final int messageType;
     private final int length;
 
-    private ChatMessage() {
-        this.version = -1;
-        this.messageType = -1;
-        this.length = -1;
-    }
-
     // constructor
-    public ChatMessage(int version, int messageType, int length) {
-        this.version = version;
+    public ChatMessage(InetAddress sourceIP, int sourcePort, int messageType, int length) {
+        this.sourceIP = sourceIP;
+        this.sourcePort = sourcePort;
+        this.version = VERSION;
         this.messageType = messageType;
         this.length = length;
     }

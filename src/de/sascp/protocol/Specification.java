@@ -4,6 +4,8 @@ package de.sascp.protocol;
  * Created by Rene on 10.05.2016.
  */
 public class Specification {
+    public static final int CHLENGTH = 12;
+
     // Timeout
     public static final int TIMEOUT = 2000;
     // Current Protocol Version
@@ -18,6 +20,8 @@ public class Specification {
     public static final int LOGOUT = 1002;
 
     // actual message types
+    public static final int LOWESTMESSAGETYPE = 0;
+    public static final int HIGHESTMESSAGETYPE = 10;
     public static final int REQFINDSERVER        = 1;
     public static final int RESFINDSERVER        = 2;
     public static final int REQLOGIN             = 3;

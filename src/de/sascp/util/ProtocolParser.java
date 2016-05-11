@@ -1,20 +1,38 @@
 package de.sascp.util;
 
+import de.sascp.client.Client;
+import de.sascp.message.subTypes.reqFindServer;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+
+import static de.sascp.protocol.Specification.*;
+
 /**
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
  * against the Protocol Specification
  */
-public class ProtocolParser {
+public class ProtocolParser implements Runnable {
+
+    Client parent;
+
+    public ProtocolParser(Client parent) {
+        this.parent = parent;
+    }
+    /*
+     * a class that waits for the message from the server and append them to the JTextArea
+     * if we have a GUI or simply System.out.println() it in console mode
+     */
+
     /**
      * Checks the Common Header of a byte[] Stream against the protocol specification
-     * @param incomingData - byte[] Stream which will be checked
      * @return returns true if Common Header matches Protocol Specification
      */
-    public static boolean checkCommonHeader(byte[] incomingData){
+    private static boolean checkCommonHeader(int version, int messageType, int length) {
 
         // TODO
 
-        return true;
+        return false;
     }
 
     /**
@@ -28,5 +46,63 @@ public class ProtocolParser {
         // TODO
 
         return true;
+    }
+
+    public static int fromArray(byte[] payload, int offset) {
+        ByteBuffer buffer = ByteBuffer.wrap(payload, offset, 4);
+        return buffer.getInt();
+    }
+
+    public void run() {
+        boolean lookingForCommonHeader = true;
+        boolean lookingForPayload = true;
+        int version = -1;
+        int messageType = -1;
+        int length = -1;
+
+        while (lookingForCommonHeader) {
+            byte[] headerBytes = new byte[CHLENGTH];
+            try {
+                parent.sInput.read(headerBytes);
+            } catch (IOException e) {
+                connectionFailed(e);
+                break;
+            }
+
+
+            version = fromArray(headerBytes, 0); // Version number
+            messageType = fromArray(headerBytes, 4); // MessageType
+            length = fromArray(headerBytes, 8);  // Length
+
+            if (checkCommonHeader(version, messageType, length)) {
+                lookingForCommonHeader = false;
+            }
+        }
+
+        while (lookingForPayload) {
+            if (messageType == UPDATECLIENT) {
+                // TODO Updateclient List einlesen bitte danke
+            } else {
+                byte[] payload = new byte[length];
+                try {
+                    parent.sInput.read(payload);
+                } catch (IOException e) {
+                    connectionFailed(e);
+                    break;
+                }
+                switch (messageType) {
+                    case (REQFINDSERVER):
+                        parent.incomingMessageQueue.add(new reqFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+                        break;
+                }
+            }
+        }
+    }
+
+    private void connectionFailed(IOException e) {
+        parent.display("Server has close the connection: " + e);
+        if (parent.cg != null)
+            parent.cg.connectionFailed();
+        return;
     }
 }

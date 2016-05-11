@@ -15,7 +15,7 @@ public class MessageBuilder {
      */
     public static byte[] buildMessage(ChatMessage chatMessage){
         int size;
-        if (chatMessage.getType() != UPDATECLIENT) {
+        if (chatMessage.getMessageType() != UPDATECLIENT) {
             size = chatMessage.getLength();
         } else {
             size = chat

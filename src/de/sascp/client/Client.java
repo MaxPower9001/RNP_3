@@ -1,28 +1,33 @@
 package de.sascp.client;
 
+import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
+import de.sascp.util.IncomingMessageHandler;
+import de.sascp.util.ProtocolParser;
 
 import java.io.*;
 import java.net.Socket;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static de.sascp.protocol.Specification.PORT;
-import static de.sascp.protocol.Specification.REQLOGIN;
 import static de.sascp.util.MessageBuilder.buildMessage;
 
 /*
  * The Client that can be run both as a console or a GUI
  */
-class Client  {
-    private final ServerListener serverListener;
+public class Client implements ChatProgramm {
+    public final IncomingMessageHandler incomingMessageHandler;
     // if I use a GUI or not
-    final ClientGUI cg;
+    public final ClientGUI cg;
+    private final ProtocolParser protocolParser;
     // the server and the username
     private final String server;
     private final String username;
+    public ConcurrentLinkedQueue<ChatMessage> incomingMessageQueue = new ConcurrentLinkedQueue<>();
     // for I/O
-    InputStream sInput;		// to read from the socket TODO ändern in InputStream
+    public InputStream sInput;        // to read from the socket TODO ändern in InputStream
+    public Socket socket;
     private OutputStream sOutput;		// to write on the socket TODO ändern in OutputStream
-    private Socket socket;
 
 
     /*
@@ -30,7 +35,8 @@ class Client  {
      * in console mode the ClienGUI parameter is null
      */
     Client(String server, String username, ClientGUI cg) {
-        this.serverListener = new ServerListener(this);
+        this.incomingMessageHandler = new IncomingMessageHandler(this);
+        this.protocolParser = new ProtocolParser(this);
         this.server = server;
         this.username = username;
         // save if we are in GUI mode or not
@@ -66,18 +72,15 @@ class Client  {
         }
 
         // creates the Thread to listen from the server
-        new Thread(serverListener).start();
+        new Thread(protocolParser).start();
         // Send our username to the server this is the only message that we
         // will send as a String. All other messages will be ChatMessage objects
-        try
-        {
-            sOutput.write(buildMessage(new ChatMessage(REQLOGIN,username)));
-        }
-        catch (IOException eIO) {
-            display("Exception doing login : " + eIO);
-            disconnect();
-            return true;
-        }
+//        try
+//        {
+        // TODO reqLogin implementieren
+//        }
+//        catch (IOException eIO) {
+//        }
         // success we inform the caller that it worked
         return false;
     }
@@ -85,7 +88,7 @@ class Client  {
     /*
      * To send a message to the console or the GUI
      */
-    void display(String msg) {
+    public void display(String msg) {
         if(cg == null)
             System.out.println(msg);      // println in console mode
         else
