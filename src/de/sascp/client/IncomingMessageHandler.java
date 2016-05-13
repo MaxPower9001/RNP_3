@@ -1,6 +1,7 @@
 package de.sascp.client;
 
 import de.sascp.message.ChatMessage;
+import de.sascp.message.subTypes.resFindServer;
 import de.sascp.message.subTypes.resHeartbeat;
 import de.sascp.util.MessageBuilder;
 
@@ -53,7 +54,9 @@ public class IncomingMessageHandler implements Runnable {
                 case (REQHEARTBEAT):
                     answerHeartbeat(parent.socket.getInetAddress(), parent.socket.getPort(), parent.sOutput);
                     break;
-                case (RESFINDSERVER)
+                case (RESFINDSERVER):
+                    parent.incomingResFindServer.add((resFindServer) currentMessage);
+                    break;
             }
         }
     }

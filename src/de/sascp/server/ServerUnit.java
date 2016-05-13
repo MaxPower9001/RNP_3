@@ -5,13 +5,4 @@ package de.sascp.server;
  */
 public class ServerUnit {
 
-
-    case(REQFINDSERVER):
-            parent.incomingMessageQueue.add(new
-
-    reqFindServer(parent.socket.getInetAddress(),parent
-
-    .socket.getPort()))
-    parent.notify()
-    break
 }

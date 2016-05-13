@@ -2,6 +2,7 @@ package de.sascp.main;
 
 
 import de.sascp.client.ClientGUI;
+import de.sascp.server.Server;
 import de.sascp.server.ServerGUI;
 
 /**
@@ -18,6 +19,7 @@ class Main {
 
         // start Server GUI
         ServerGUI serverGUI = new ServerGUI();
+        Server server = new Server(serverGUI);
     }
 
     // to start the whole thing

@@ -18,7 +18,7 @@ import static de.sascp.protocol.Specification.PORT;
 /*
  * The server that can be run both as a console application or a GUI
  */
-class Server implements ChatProgramm {
+public class Server implements ChatProgramm {
     // a unique ID for each connection
     static int uniqueId;
     // an ArrayList to keep the list of the Client

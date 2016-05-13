@@ -5,9 +5,9 @@ import java.net.InetAddress;
 
 import static de.sascp.protocol.Specification.VERSION;
 
-public class ChatMessage implements Serializable {
+public abstract class ChatMessage implements Serializable {
 
-    private final int sourceIP;
+    private final InetAddress sourceIP;
     private final int sourcePort;
 
     private final int version;
@@ -25,7 +25,7 @@ public class ChatMessage implements Serializable {
 
     // getters
 
-    public long getVersion() {
+    public int getVersion() {
         return version;
     }
 
@@ -35,6 +35,14 @@ public class ChatMessage implements Serializable {
 
     public int getLength() {
         return length;
+    }
+
+    public InetAddress getSourceIP() {
+        return sourceIP;
+    }
+
+    public int getSourcePort() {
+        return sourcePort;
     }
 }
 

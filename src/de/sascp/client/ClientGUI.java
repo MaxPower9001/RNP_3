@@ -4,17 +4,10 @@ package de.sascp.client;
  * Created by Rene on 10.05.2016.
  */
 
-import de.sascp.message.subTypes.reqFindServer;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.IOException;
-import java.net.*;
-import java.nio.ByteBuffer;
-
-import static de.sascp.protocol.Specification.*;
 
 /*
  * The Client with its GUI
@@ -100,6 +93,10 @@ public class ClientGUI extends JFrame implements ActionListener {
         setVisible(true);
         tf.requestFocus();
 
+
+        // try creating a new Client with GUI
+        client = new Client(this);
+
     }
 
     // called by the Client to append text in the TextArea
@@ -137,62 +134,21 @@ public class ClientGUI extends JFrame implements ActionListener {
         }
         // if it the who is in button
         if(o == whoIsIn) {
-            client.sendMessage();
+            client.displayConnectedClients();
             return;
         }
 
         // ok it is coming from the JTextField
         if(connected) {
             // just have to send the message
-            client.sendMessage();
+            // TODO
+            // client.sendMessage();
             tf.setText("");
             return;
         }
 
         if (o == findServer) {
-            client.sendMessage(new reqFindServer(new Inet4Address("255.255.255.255")));
-            // Client wants to find a Server
-            // Send broadcast and wait for answer
-            boolean serverFound = false;
-            DatagramSocket socket = null;
-            try {
-                socket = new DatagramSocket(PORT);
-                socket.setSoTimeout(TIMEOUT);
-            } catch (SocketException e1) {
-                e1.printStackTrace();
-            }
-
-            while (!serverFound) {
-                //          Wait for resFindServer TODO
-                DatagramPacket packet = new DatagramPacket(new byte[12], 12);
-                try {
-                    socket.receive(packet);
-                } catch (SocketTimeoutException timeOut) {
-                    // resFindServer not received
-                    append("Keinen Server gefunden!");
-                    break;
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                    break;
-                }
-
-//              Server found, check for correct message Type TODO move to Protocol Parser & Incoming Message Handler
-                int receivedVersion = -1;
-                int receivedMessageType = -1;
-                int receivedLength = -1;
-                ByteBuffer b = ByteBuffer.wrap(packet.getData());
-                receivedVersion = b.getInt(0);
-                receivedMessageType = b.getInt(4);
-                receivedLength = b.getInt(8);
-                if (receivedMessageType == RESFINDSERVER &&
-                        receivedVersion == VERSION &&
-                        receivedLength == 0) {
-                    serverFound = true;
-                    append("Server gefunden!");
-                    serverAdress.setText(String.valueOf(packet.getAddress()));
-                }
-            }
-
+            client.reqFindServer();
         }
 
         if(o == login) {
@@ -205,9 +161,8 @@ public class ClientGUI extends JFrame implements ActionListener {
             String server = tfServer.getText().trim();
             if(server.length() == 0)
                 return;
-
-            // try creating a new Client with GUI
-            client = new Client(incomingMessageHandler, server, username, this);
+            client.setServer(server);
+            client.setUsername(username);
             // test if we can start the Client
             if(client.start())
                 return;
@@ -227,6 +182,10 @@ public class ClientGUI extends JFrame implements ActionListener {
             tf.addActionListener(this);
         }
 
+    }
+
+    public void setServerTextField(String serverIP) {
+        tfServer.setText(serverIP);
     }
 }
 

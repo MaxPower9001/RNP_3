@@ -4,7 +4,6 @@ package de.sascp.protocol;
  * Created by Rene on 10.05.2016.
  */
 public class Specification {
-    public static final int CHLENGTH = 12;
 
     // Timeout
     public static final int TIMEOUT = 2000;

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import static de.sascp.protocol.Specification.*;
+import static de.sascp.util.Utility.CHLENGTH;
 
 /**
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
@@ -102,8 +103,8 @@ public class ClientProtocolParser implements Runnable {
 
     private void connectionFailed(IOException e) {
         parent.display("Server has close the connection: " + e);
-        if (parent.cg != null)
-            parent.cg.connectionFailed();
+        if (parent.clientGUI != null)
+            parent.clientGUI.connectionFailed();
         return;
     }
 }
