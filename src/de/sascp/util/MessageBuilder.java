@@ -3,11 +3,13 @@ package de.sascp.util;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.reqFindServer;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.CHLENGTH;
@@ -18,6 +20,7 @@ import static de.sascp.util.Utility.CHLENGTH;
 public class MessageBuilder {
     /**
      * Converts an ChatMessage Object into Protocol-specific byte Stream
+     *
      * @param chatMessage - ChatMessage Object, which will be converted
      * @return - byte[] Stream for outgoing data
      */
@@ -33,7 +36,7 @@ public class MessageBuilder {
         switch (chatMessage.getMessageType()) {
             case (REQFINDSERVER):
                 reqFindServer messageToBeSent = new reqFindServer(chatMessage.getSourceIP(), chatMessage.getSourcePort());
-                buildCommonHeader(outgoingMessage, messageToBeSent);
+                outgoingMessage = buildCommonHeader(messageToBeSent);
 
                 DatagramPacket packet = new DatagramPacket(outgoingMessage, outgoingMessage.length, Utility.getBroadcastIP(), 4242);
                 DatagramSocket toSocket = null;
@@ -55,18 +58,22 @@ public class MessageBuilder {
         return false;
     }
 
-    private static void buildCommonHeader(byte[] byteToBeSent, ChatMessage chatMessage) {
-        byteToBeSent[0] = (byte) VERSION >> 24;
-        byteToBeSent[1] = (byte) VERSION >> 16;
-        byteToBeSent[2] = (byte) VERSION >> 8;
-        byteToBeSent[3] = (byte) VERSION;
-        byteToBeSent[4] = (byte) (chatMessage.getMessageType() >> 24);
-        byteToBeSent[5] = (byte) (chatMessage.getMessageType() >> 18);
-        byteToBeSent[6] = (byte) (chatMessage.getMessageType() >> 8);
-        byteToBeSent[7] = (byte) chatMessage.getMessageType();
-        byteToBeSent[8] = (byte) (chatMessage.getLength() >> 24);
-        byteToBeSent[9] = (byte) (chatMessage.getLength() >> 18);
-        byteToBeSent[10] = (byte) (chatMessage.getLength() >> 8);
-        byteToBeSent[11] = (byte) chatMessage.getLength();
+    private static byte[] buildCommonHeader(ChatMessage chatMessage) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            outputStream.write(intToByteArray(VERSION));
+            outputStream.write(intToByteArray(chatMessage.getMessageType()));
+            outputStream.write(intToByteArray(chatMessage.getLength()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return outputStream.toByteArray();
+    }
+
+    private static byte[] intToByteArray(int intToTransform) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+        byteBuffer.putInt(intToTransform);
+        return byteBuffer.array();
     }
 }

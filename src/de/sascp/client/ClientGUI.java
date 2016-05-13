@@ -4,6 +4,8 @@ package de.sascp.client;
  * Created by Rene on 10.05.2016.
  */
 
+import de.sascp.server.Server;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -16,7 +18,6 @@ public class ClientGUI extends JFrame implements ActionListener {
 
     // will first hold "Username:", later on "Enter message"
     private final JLabel label;
-    private final JLabel serverAdress;
     // to hold the Username and later on the messages
     private final JTextField tf;
     // to hold the server address an the port number
@@ -29,27 +30,26 @@ public class ClientGUI extends JFrame implements ActionListener {
     // for the chat room
     private final JTextArea ta;
     private final String defaultHost;
+    // the Client object
+    private final Client client;
     // if it is for connection
     private boolean connected;
-    // the Client object
-    private Client client;
 
     // Constructor
-    public ClientGUI() {
-
+    public ClientGUI(Server server) {
         super("Chat Client");
         defaultHost = "localhost";
 
         // The NorthPanel with:
-        JPanel northPanel = new JPanel(new GridLayout(3,1));
+        JPanel northPanel = new JPanel(new GridLayout(3, 1));
         // the server name anmd the port number
-        JPanel serverAndPort = new JPanel(new GridLayout(1,5, 1, 3));
+        JPanel serverAndPort = new JPanel(new GridLayout(1, 5, 1, 3));
         // the two JTextField with default value for server address and port number
         tfServer = new JTextField("");
 
         serverAndPort.add(new JLabel("Server Address:  "));
         serverAndPort.add(tfServer);
-        serverAdress = new JLabel("");
+        JLabel serverAdress = new JLabel("");
         serverAndPort.add(serverAdress);
         // adds the Server an port field to the GUI
         northPanel.add(serverAndPort);
@@ -64,7 +64,7 @@ public class ClientGUI extends JFrame implements ActionListener {
 
         // The CenterPanel which is the chat room
         ta = new JTextArea("Welcome to the Chat room\n", 80, 80);
-        JPanel centerPanel = new JPanel(new GridLayout(1,1));
+        JPanel centerPanel = new JPanel(new GridLayout(1, 1));
         centerPanel.add(new JScrollPane(ta));
         ta.setEditable(false);
         add(centerPanel, BorderLayout.CENTER);
@@ -76,10 +76,10 @@ public class ClientGUI extends JFrame implements ActionListener {
         login.addActionListener(this);
         logout = new JButton("Logout");
         logout.addActionListener(this);
-        logout.setEnabled(false);		// you have to login before being able to logout
+        logout.setEnabled(false);        // you have to login before being able to logout
         whoIsIn = new JButton("Who is in");
         whoIsIn.addActionListener(this);
-        whoIsIn.setEnabled(false);		// you have to login before being able to Who is in
+        whoIsIn.setEnabled(false);        // you have to login before being able to Who is in
 
         JPanel southPanel = new JPanel();
         southPanel.add(findServer);
@@ -95,7 +95,7 @@ public class ClientGUI extends JFrame implements ActionListener {
 
 
         // try creating a new Client with GUI
-        client = new Client(this);
+        client = new Client(this, server);
 
     }
 
@@ -104,6 +104,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         ta.append(str);
         ta.setCaretPosition(ta.getText().length() - 1);
     }
+
     // called by the GUI is the connection failed
     // we reset our buttons, label, textfield
     public void connectionFailed() {
@@ -128,18 +129,18 @@ public class ClientGUI extends JFrame implements ActionListener {
     public void actionPerformed(ActionEvent e) {
         Object o = e.getSource();
         // if it is the Logout button
-        if(o == logout) {
+        if (o == logout) {
             client.display("Logout gibs nicht im SASCP - hier wird gechattet bis die Finger glühen!");
             return;
         }
         // if it the who is in button
-        if(o == whoIsIn) {
+        if (o == whoIsIn) {
             client.displayConnectedClients();
             return;
         }
 
         // ok it is coming from the JTextField
-        if(connected) {
+        if (connected) {
             // just have to send the message
             // TODO
             // client.sendMessage();
@@ -151,20 +152,20 @@ public class ClientGUI extends JFrame implements ActionListener {
             client.reqFindServer();
         }
 
-        if(o == login) {
+        if (o == login) {
             // ok it is a connection request
             String username = tf.getText().trim();
             // empty username ignore it
-            if(username.length() == 0)
+            if (username.length() == 0)
                 return;
             // empty serverAddress ignore it
             String server = tfServer.getText().trim();
-            if(server.length() == 0)
+            if (server.length() == 0)
                 return;
-            client.setServer(server);
+            client.setServerip(server);
             client.setUsername(username);
             // test if we can start the Client
-            if(client.start())
+            if (client.start())
                 return;
             tf.setText("");
             label.setText("Enter your message below");
@@ -186,6 +187,10 @@ public class ClientGUI extends JFrame implements ActionListener {
 
     public void setServerTextField(String serverIP) {
         tfServer.setText(serverIP);
+    }
+
+    public void disableFindServerButton() {
+        findServer.setEnabled(false);
     }
 }
 

@@ -30,12 +30,12 @@ public class ServerGUI extends JFrame implements WindowListener {
         add(north, BorderLayout.NORTH);
 
         // the event and chat room
-        JPanel center = new JPanel(new GridLayout(2,1));
-        chat = new JTextArea(80,80);
+        JPanel center = new JPanel(new GridLayout(2, 1));
+        chat = new JTextArea(80, 80);
         chat.setEditable(false);
         appendRoom("Chat room.\n");
         center.add(new JScrollPane(chat));
-        event = new JTextArea(80,80);
+        event = new JTextArea(80, 80);
         event.setEditable(false);
         appendEvent("Events log.\n");
         center.add(new JScrollPane(event));
@@ -47,9 +47,6 @@ public class ServerGUI extends JFrame implements WindowListener {
         setVisible(true);
 
         server = new Server(this);
-        // and start it as a thread
-        new ServerRunning().start();
-
     }
 
     // append message to the two JTextArea
@@ -58,6 +55,7 @@ public class ServerGUI extends JFrame implements WindowListener {
         chat.append(str);
         chat.setCaretPosition(chat.getText().length() - 1);
     }
+
     void appendEvent(String str) {
         event.append(str);
         event.setCaretPosition(chat.getText().length() - 1);
@@ -70,11 +68,10 @@ public class ServerGUI extends JFrame implements WindowListener {
      */
     public void windowClosing(WindowEvent e) {
         // if my Server exist
-        if(server != null) {
+        if (server != null) {
             try {
-                server.stop();			// ask the server to close the conection
-            }
-            catch(Exception eClose) {
+                server.stop();            // ask the server to close the conection
+            } catch (Exception eClose) {
             }
             server = null;
         }
@@ -82,24 +79,28 @@ public class ServerGUI extends JFrame implements WindowListener {
         dispose();
         System.exit(0);
     }
-    // I can ignore the other WindowListener method
-    public void windowClosed(WindowEvent e) {}
-    public void windowOpened(WindowEvent e) {}
-    public void windowIconified(WindowEvent e) {}
-    public void windowDeiconified(WindowEvent e) {}
-    public void windowActivated(WindowEvent e) {}
-    public void windowDeactivated(WindowEvent e) {}
 
-    /*
-     * A thread to run the Server
-     */
-    private class ServerRunning extends Thread {
-        public void run() {
-            server.start();         // should execute until if fails
-            // the server failed
-            appendEvent("Server crashed\n");
-            server = null;
-        }
+    // I can ignore the other WindowListener method
+    public void windowClosed(WindowEvent e) {
+    }
+
+    public void windowOpened(WindowEvent e) {
+    }
+
+    public void windowIconified(WindowEvent e) {
+    }
+
+    public void windowDeiconified(WindowEvent e) {
+    }
+
+    public void windowActivated(WindowEvent e) {
+    }
+
+    public void windowDeactivated(WindowEvent e) {
+    }
+
+    public Server getServer() {
+        return server;
     }
 
 }

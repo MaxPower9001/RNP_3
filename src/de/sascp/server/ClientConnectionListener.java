@@ -14,13 +14,15 @@ import static de.sascp.protocol.Specification.*;
 /**
  * One instance of this thread will run for each client
  */
-class ClientConnectionListener implements Runnable {
+public class ClientConnectionListener implements Runnable {
     // the socket where to listen/talk
     final Socket socket;
     // my unique id (easier for deconnection)
     final int id;
+    private final ServerProtocolParser serverProtocolParser;
+    private final ServerUnit serverUnit;
     private final Server parent;
-    ObjectInputStream sInput; //TODO ändern in InputStream
+    public ObjectInputStream sInput; //TODO ändern in InputStream
     ObjectOutputStream sOutput; //TODO ändern in OutputStream
     // the Username of the Client
     String username;
@@ -29,6 +31,8 @@ class ClientConnectionListener implements Runnable {
 
     // Constructore
     ClientConnectionListener(Socket socket, Server parent) {
+        this.serverProtocolParser = new ServerProtocolParser(this);
+        this.serverUnit = new ServerUnit(this);
         this.parent = parent;
         // a unique id
         id = ++Server.uniqueId;
@@ -79,7 +83,7 @@ class ClientConnectionListener implements Runnable {
                     keepGoing = false;
                     break;
                 case WHOISIN:
-                    writeMsg("List of the users connected at " + parent.getSdf().format(new Date()) + "\n");
+                    writeMsg("List of the users connected at " + parent.getSimpleDateFormat().format(new Date()) + "\n");
                     // scan al the users connected
                     for (int i = 0; i < parent.getAl().size(); ++i) {
                         ClientConnectionListener ct = parent.getAl().get(i);

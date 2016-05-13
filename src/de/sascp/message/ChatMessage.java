@@ -15,7 +15,7 @@ public abstract class ChatMessage implements Serializable {
     private final int length;
 
     // constructor
-    public ChatMessage(InetAddress sourceIP, int sourcePort, int messageType, int length) {
+    protected ChatMessage(InetAddress sourceIP, int sourcePort, int messageType, int length) {
         this.sourceIP = sourceIP;
         this.sourcePort = sourcePort;
         this.version = VERSION;

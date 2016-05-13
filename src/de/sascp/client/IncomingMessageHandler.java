@@ -14,9 +14,9 @@ import static de.sascp.protocol.Specification.RESFINDSERVER;
 /**
  * Converts byte[] Streams checked by the Protocol Parser into ChatMessage Objects and answers Heartbeat-Requests
  */
-public class IncomingMessageHandler implements Runnable {
+class IncomingMessageHandler implements Runnable {
 
-    Client parent;
+    private final Client parent;
 
     public IncomingMessageHandler(Client parent) {
         this.parent = parent;
@@ -31,11 +31,12 @@ public class IncomingMessageHandler implements Runnable {
 
     /**
      * Directly answers Heartbeat Package with the given OutputStream
+     *
      * @param outputStream - OutputStream needed to send the Message
      * @return returns true, if message send successfully. returns false,
-     *          if IOException thrown
+     * if IOException thrown
      */
-    public boolean answerHeartbeat(InetAddress targetIP, int targetPort, OutputStream outputStream) {
+    private boolean answerHeartbeat(InetAddress targetIP, int targetPort, OutputStream outputStream) {
         return MessageBuilder.buildMessage(new resHeartbeat(targetIP, targetPort), outputStream);
     }
 
@@ -44,7 +45,9 @@ public class IncomingMessageHandler implements Runnable {
         while (true) {
             if (parent.incomingMessageQueue.isEmpty()) {
                 try {
-                    parent.incomingMessageQueue.wait();
+                    synchronized (parent.incomingMessageQueue) {
+                        parent.incomingMessageQueue.wait();
+                    }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

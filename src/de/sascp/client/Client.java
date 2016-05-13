@@ -4,6 +4,7 @@ import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.reqFindServer;
 import de.sascp.message.subTypes.resFindServer;
+import de.sascp.server.Server;
 import de.sascp.util.MessageBuilder;
 import de.sascp.util.Utility;
 
@@ -21,19 +22,20 @@ import static de.sascp.protocol.Specification.TIMEOUT;
 /*
  * The Client that can be run both as a console or a GUI
  */
-public class Client implements ChatProgramm {
-    public final IncomingMessageHandler incomingMessageHandler;
+class Client implements ChatProgramm {
     // if I use a GUI or not
     public final ClientGUI clientGUI;
+    public final ConcurrentLinkedQueue<ChatMessage> incomingMessageQueue = new ConcurrentLinkedQueue<>();
+    final ConcurrentLinkedQueue<resFindServer> incomingResFindServer = new ConcurrentLinkedQueue<>();
+    private final IncomingMessageHandler incomingMessageHandler;
     private final ClientProtocolParser clientProtocolParser;
-    public ConcurrentLinkedQueue<ChatMessage> incomingMessageQueue = new ConcurrentLinkedQueue<>();
-    public ConcurrentLinkedQueue<resFindServer> incomingResFindServer = new ConcurrentLinkedQueue<>();
     // for I/O
     public InputStream sInput;        // to read from the socket TODO ändern in InputStream
     public Socket socket;
     OutputStream sOutput;        // to write on the socket TODO ändern in OutputStream
-    // the server and the username
-    private String server;
+    // the serverip and the username
+    private Server server;
+    private String serverip;
     private String username;
     private ArrayList<Runnable> waiterList = new ArrayList<>();
 
@@ -42,10 +44,11 @@ public class Client implements ChatProgramm {
      * Constructor call when used from a GUI
      * in console mode the ClienGUI parameter is null
      */
-    public Client(ClientGUI clientGUI) {
+    public Client(ClientGUI clientGUI, Server server) {
         this.incomingMessageHandler = new IncomingMessageHandler(this);
         this.clientProtocolParser = new ClientProtocolParser(this);
-        this.server = "";
+        this.server = server;
+        this.serverip = "";
         this.username = "";
         // save if we are in GUI mode or not
         this.clientGUI = clientGUI;
@@ -55,13 +58,13 @@ public class Client implements ChatProgramm {
      * To start the dialog
      */
     boolean start() {
-        // try to connect to the server
+        // try to connect to the serverip
         try {
-            socket = new Socket(server, PORT);
+            socket = new Socket(serverip, PORT);
         }
         // if it failed not much I can so
-        catch(Exception ec) {
-            display("Error connectiong to server:" + ec);
+        catch (Exception ec) {
+            display("Error connectiong to serverip:" + ec);
             return true;
         }
 
@@ -69,17 +72,15 @@ public class Client implements ChatProgramm {
         display(msg);
 
 		/* Creating both Data Stream */
-        try
-        {
-            sInput  = new ObjectInputStream(socket.getInputStream());
+        try {
+            sInput = new ObjectInputStream(socket.getInputStream());
             sOutput = new ObjectOutputStream(socket.getOutputStream());
-        }
-        catch (IOException eIO) {
+        } catch (IOException eIO) {
             display("Exception creating new Input/output Streams: " + eIO);
             return true;
         }
 
-        // creates the Thread to listen from the server
+        // creates the Thread to listen from the serverip
         new Thread(clientProtocolParser).start();
         new Thread(incomingMessageHandler).start();
         return false;
@@ -96,9 +97,9 @@ public class Client implements ChatProgramm {
     }
 
     /*
-     * To send a message to the server // TODO vorher umwandeln in byte[] Stream
+     * To send a message to the serverip // TODO vorher umwandeln in byte[] Stream
      */
-    void sendMessage(ChatMessage msg) {
+    private void sendMessage(ChatMessage msg) {
         MessageBuilder.buildMessage(msg, sOutput);
     }
 
@@ -108,17 +109,17 @@ public class Client implements ChatProgramm {
      */
     private void disconnect() {
         try {
-            if(sInput != null) sInput.close();
-        }
-        catch(Exception e) {} // not much else I can do
+            if (sInput != null) sInput.close();
+        } catch (Exception e) {
+        } // not much else I can do
         try {
-            if(sOutput != null) sOutput.close();
-        }
-        catch(Exception e) {} // not much else I can do
-        try{
-            if(socket != null) socket.close();
-        }
-        catch(Exception e) {} // not much else I can do
+            if (sOutput != null) sOutput.close();
+        } catch (Exception e) {
+        } // not much else I can do
+        try {
+            if (socket != null) socket.close();
+        } catch (Exception e) {
+        } // not much else I can do
 
         // inform the GUI
         if (clientGUI != null)
@@ -135,10 +136,12 @@ public class Client implements ChatProgramm {
             @Override
             public void run() {
                 if (incomingResFindServer.isEmpty()) {
-                    clientGUI.append("Keinen Server gefunden!\n");
-                    clientGUI.append("Starte eigenen Server...");
-                    startOwnServer();
+                    clientGUI.append("Keinen Server gefunden!\n\n");
+                    clientGUI.append("Starte eigenen Server...\n");
+                    new Thread(server).start();
+                    clientGUI.append("Server gestartet!\n\n");
                     clientGUI.setServerTextField("localhost");
+                    clientGUI.disableFindServerButton();
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
@@ -157,10 +160,6 @@ public class Client implements ChatProgramm {
         // TODO
     }
 
-    private void startOwnServer() {
-        // TODO
-    }
-
     public void displayConnectedClients() {
         // TODO
     }
@@ -169,8 +168,8 @@ public class Client implements ChatProgramm {
         this.username = username;
     }
 
-    public void setServer(String server) {
-        this.server = server;
+    public void setServerip(String serverip) {
+        this.serverip = serverip;
     }
 }
 

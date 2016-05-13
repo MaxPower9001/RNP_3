@@ -1,6 +1,4 @@
-package de.sascp.client;
-
-import de.sascp.message.subTypes.resFindServer;
+package de.sascp.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -12,11 +10,11 @@ import static de.sascp.util.Utility.CHLENGTH;
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
  * against the Protocol Specification
  */
-class ClientProtocolParser implements Runnable {
+public class ServerProtocolParser implements Runnable {
 
-    private final Client parent;
+    public final ClientConnectionListener parent;
 
-    public ClientProtocolParser(Client parent) {
+    public ServerProtocolParser(ClientConnectionListener parent) {
         this.parent = parent;
     }
     /*
@@ -31,11 +29,9 @@ class ClientProtocolParser implements Runnable {
      */
     private static boolean checkCommonHeader(int version, int messageType, int length) {
 
-        return version == VERSION &&
-                messageType > LOWESTMESSAGETYPE &&
-                messageType < HIGHESTMESSAGETYPE &&
-                length >= 0;
+        // TODO
 
+        return false;
     }
 
     /**
@@ -95,8 +91,8 @@ class ClientProtocolParser implements Runnable {
                 }
                 switch (messageType) {
                     case (RESFINDSERVER):
-                        parent.incomingMessageQueue.add(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
-                        parent.incomingMessageQueue.notify();
+//                        parent.incomingMessageQueue.add(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+//                        parent.incomingMessageQueue.notify();
                         break;
                     case (REQHEARTBEAT):
 
@@ -105,9 +101,9 @@ class ClientProtocolParser implements Runnable {
         }
     }
 
-    private void connectionFailed(IOException e) {
-        parent.display("Server has close the connection: " + e);
-        if (parent.clientGUI != null)
-            parent.clientGUI.connectionFailed();
+    public void connectionFailed(IOException e) {
+
     }
+
+
 }
