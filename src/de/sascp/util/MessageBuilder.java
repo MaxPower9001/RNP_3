@@ -27,13 +27,14 @@ public class MessageBuilder {
         } else {
 
         }
+        byte[] outgoingMessage = new byte[size];
+
         switch (chatMessage.getMessageType()) {
             case (REQFINDSERVER):
                 reqFindServer messageToBeSent = new reqFindServer(chatMessage.getSourceIP(), chatMessage.getSourcePort());
-                byte[] byteToBeSent = new byte[12];
-                buildCommonHeader(byteToBeSent, 0, messageToBeSent.getMessageType());
+                buildCommonHeader(outgoingMessage, messageToBeSent);
 
-                DatagramPacket packet = new DatagramPacket(byteToBeSent, byteToBeSent.length, Utility.getBroadcastIP(), 4242);
+                DatagramPacket packet = new DatagramPacket(outgoingMessage, outgoingMessage.length, Utility.getBroadcastIP(), 4242);
                 DatagramSocket toSocket = null;
                 try {
                     toSocket = new DatagramSocket();
@@ -45,18 +46,17 @@ public class MessageBuilder {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                break;
+                return true;
         }
-        byte[] outgoingMessage = new byte[size];
 
         // TODO
 
         return false;
     }
 
-    private static void buildCommonHeader(byte[] byteToBeSent, int length, int messageType) {
+    private static void buildCommonHeader(byte[] byteToBeSent, ChatMessage chatMessage) {
         byteToBeSent[0] = (byte) VERSION;
-        byteToBeSent[4] = (byte) messageType;
-        byteToBeSent[8] = (byte) length;
+        byteToBeSent[4] = (byte) chatMessage.getMessageType();
+        byteToBeSent[8] = (byte) chatMessage.getLength();
     }
 }
