@@ -10,6 +10,7 @@ import java.net.DatagramSocket;
 import java.net.SocketException;
 
 import static de.sascp.protocol.Specification.*;
+import static de.sascp.util.Utility.CHLENGTH;
 
 /**
  * Message Builder presents functionality for converting Chat Message Objects into byte[] Streams
@@ -23,7 +24,7 @@ public class MessageBuilder {
     public static boolean buildMessage(ChatMessage chatMessage, OutputStream outputStream) {
         int size = 0;
         if (chatMessage.getMessageType() != UPDATECLIENT) {
-            size = chatMessage.getLength();
+            size = chatMessage.getLength() + CHLENGTH;
         } else {
 
         }
