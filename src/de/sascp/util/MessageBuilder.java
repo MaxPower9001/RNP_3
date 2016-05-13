@@ -56,8 +56,17 @@ public class MessageBuilder {
     }
 
     private static void buildCommonHeader(byte[] byteToBeSent, ChatMessage chatMessage) {
-        byteToBeSent[0] = (byte) VERSION;
-        byteToBeSent[4] = (byte) chatMessage.getMessageType();
-        byteToBeSent[8] = (byte) chatMessage.getLength();
+        byteToBeSent[0] = (byte) VERSION >> 24;
+        byteToBeSent[1] = (byte) VERSION >> 16;
+        byteToBeSent[2] = (byte) VERSION >> 8;
+        byteToBeSent[3] = (byte) VERSION;
+        byteToBeSent[4] = (byte) (chatMessage.getMessageType() >> 24);
+        byteToBeSent[5] = (byte) (chatMessage.getMessageType() >> 18);
+        byteToBeSent[6] = (byte) (chatMessage.getMessageType() >> 8);
+        byteToBeSent[7] = (byte) chatMessage.getMessageType();
+        byteToBeSent[8] = (byte) (chatMessage.getLength() >> 24);
+        byteToBeSent[9] = (byte) (chatMessage.getLength() >> 18);
+        byteToBeSent[10] = (byte) (chatMessage.getLength() >> 8);
+        byteToBeSent[11] = (byte) chatMessage.getLength();
     }
 }
