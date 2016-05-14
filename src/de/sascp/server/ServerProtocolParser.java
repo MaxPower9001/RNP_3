@@ -3,18 +3,15 @@ package de.sascp.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static de.sascp.protocol.Specification.*;
-import static de.sascp.util.Utility.CHLENGTH;
-
 /**
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
  * against the Protocol Specification
  */
-public class ServerProtocolParser implements Runnable {
+public class ServerProtocolParser {
 
-    public final ClientConnectionListener parent;
+    public final Server parent;
 
-    public ServerProtocolParser(ClientConnectionListener parent) {
+    public ServerProtocolParser(Server parent) {
         this.parent = parent;
     }
     /*
@@ -51,54 +48,6 @@ public class ServerProtocolParser implements Runnable {
     private static int fromArray(byte[] payload, int offset) {
         ByteBuffer buffer = ByteBuffer.wrap(payload, offset, 4);
         return buffer.getInt();
-    }
-
-    public void run() {
-        boolean lookingForCommonHeader = true;
-        boolean lookingForPayload = true;
-        int version = -1;
-        int messageType = -1;
-        int length = -1;
-
-        while (lookingForCommonHeader) {
-            byte[] headerBytes = new byte[CHLENGTH];
-            try {
-                parent.sInput.read(headerBytes);
-            } catch (IOException e) {
-                connectionFailed(e);
-                break;
-            }
-
-            version = fromArray(headerBytes, 0); // Version number
-            messageType = fromArray(headerBytes, 4); // MessageType
-            length = fromArray(headerBytes, 8);  // Length
-
-            if (checkCommonHeader(version, messageType, length)) {
-                lookingForCommonHeader = false;
-            }
-        }
-
-        while (lookingForPayload) {
-            if (messageType == UPDATECLIENT) {
-                // TODO Updateclient List einlesen bitte danke
-            } else {
-                byte[] payload = new byte[length];
-                try {
-                    parent.sInput.read(payload);
-                } catch (IOException e) {
-                    connectionFailed(e);
-                    break;
-                }
-                switch (messageType) {
-                    case (RESFINDSERVER):
-//                        parent.incomingMessageQueue.add(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
-//                        parent.incomingMessageQueue.notify();
-                        break;
-                    case (REQHEARTBEAT):
-
-                }
-            }
-        }
     }
 
     public void connectionFailed(IOException e) {

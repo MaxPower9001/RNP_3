@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.protocol.Specification.TIMEOUT;
@@ -25,14 +26,14 @@ import static de.sascp.protocol.Specification.TIMEOUT;
 class Client implements ChatProgramm {
     // if I use a GUI or not
     public final ClientGUI clientGUI;
-    public final ConcurrentLinkedQueue<ChatMessage> incomingMessageQueue = new ConcurrentLinkedQueue<>();
+    public final LinkedBlockingQueue<ChatMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
     final ConcurrentLinkedQueue<resFindServer> incomingResFindServer = new ConcurrentLinkedQueue<>();
     private final IncomingMessageHandler incomingMessageHandler;
     private final ClientProtocolParser clientProtocolParser;
     // for I/O
-    public InputStream sInput;        // to read from the socket TODO ändern in InputStream
+    public InputStream sInput;
     public Socket socket;
-    OutputStream sOutput;        // to write on the socket TODO ändern in OutputStream
+    OutputStream sOutput;
     // the serverip and the username
     private Server server;
     private String serverip;
@@ -99,7 +100,7 @@ class Client implements ChatProgramm {
     /*
      * To send a message to the serverip // TODO vorher umwandeln in byte[] Stream
      */
-    private void sendMessage(ChatMessage msg) {
+    private void sendMessage(reqFindServer msg) {
         MessageBuilder.buildMessage(msg, sOutput);
     }
 
@@ -128,7 +129,7 @@ class Client implements ChatProgramm {
     }
 
     public void reqFindServer() {
-        sendMessage(new reqFindServer(Utility.getBroadcastIP(), 0));
+        sendMessage(new reqFindServer(Utility.getBroadcastIP(), 4242));
         incomingResFindServer.clear();
 
         Timer time = new Timer();
@@ -145,8 +146,8 @@ class Client implements ChatProgramm {
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
-                        if (r.getSourceIP().toString().compareTo(lowestIP.toString()) == -1) {
-                            lowestIP = r.getSourceIP();
+                        if (r.getDestinationIP().toString().compareTo(lowestIP.toString()) == -1) {
+                            lowestIP = r.getDestinationIP();
                         }
                     }
                     clientGUI.append("Server gefunden!");

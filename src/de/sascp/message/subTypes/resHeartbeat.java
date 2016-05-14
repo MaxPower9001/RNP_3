@@ -11,6 +11,6 @@ import static de.sascp.protocol.Specification.RESHEARTBEAT;
  */
 public class resHeartbeat extends ChatMessage {
     public resHeartbeat(InetAddress targetIP, int targetPort) {
-        super(targetIP, targetPort, RESHEARTBEAT, 0);
+        super(targetIP, targetPort, null, 0, RESHEARTBEAT, 0);
     }
 }

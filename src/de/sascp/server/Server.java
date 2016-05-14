@@ -11,9 +11,10 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import static de.sascp.protocol.Specification.PORT;
 
@@ -23,9 +24,9 @@ import static de.sascp.protocol.Specification.PORT;
 public class Server implements ChatProgramm, Runnable {
     // a unique ID for each connection
     static int uniqueId;
-    public final ConcurrentLinkedQueue<ChatMessage> incomingMessageQueue = new ConcurrentLinkedQueue<>();
+    public final LinkedBlockingQueue<ChatMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
     // an ArrayList to keep the list of the Client
-    private final ArrayList<ClientConnectionListener> al;
+    private final HashMap<String, ClientConnectionListener> listenerHashMap;
     // if I am in a GUI
     private final ServerGUI serverGUI;
     // to display time
@@ -40,7 +41,8 @@ public class Server implements ChatProgramm, Runnable {
         // to display hh:mm:ss
         simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
         // ArrayList for the Client list
-        al = new ArrayList<>();
+        listenerHashMap = new HashMap<>();
+        new Thread(new UDPServer(this)).start();
     }
 
     /*
@@ -83,11 +85,11 @@ public class Server implements ChatProgramm, Runnable {
 
         // we loop in reverse order in case we would have to remove a Client
         // because it has disconnected
-        for (int i = al.size(); --i >= 0; ) {
-            ClientConnectionListener ct = al.get(i);
+        for (int i = listenerHashMap.size(); --i >= 0; ) {
+            ClientConnectionListener ct = listenerHashMap.get(i);
             // try to write to the Client if it fails remove it from the list
             if (!ct.writeMsg(messageLf)) {
-                al.remove(i);
+                listenerHashMap.remove(i);
                 display("Disconnected Client " + ct.username + " removed from list.");
             }
         }
@@ -96,18 +98,18 @@ public class Server implements ChatProgramm, Runnable {
     // for a client who logoff using the LOGOUT message
     synchronized void remove(int id) {
         // scan the array list until we found the Id
-        for (int i = 0; i < al.size(); ++i) {
-            ClientConnectionListener ct = al.get(i);
+        for (int i = 0; i < listenerHashMap.size(); ++i) {
+            ClientConnectionListener ct = listenerHashMap.get(i);
             // found it
             if (ct.id == id) {
-                al.remove(i);
+                listenerHashMap.remove(i);
                 return;
             }
         }
     }
 
-    public ArrayList<ClientConnectionListener> getAl() {
-        return al;
+    public HashMap<String, ClientConnectionListener> getListenerHashMap() {
+        return listenerHashMap;
     }
 
     public SimpleDateFormat getSimpleDateFormat() {
@@ -132,15 +134,16 @@ public class Server implements ChatProgramm, Runnable {
                 if (!keepGoing)
                     break;
                 ClientConnectionListener t = new ClientConnectionListener(socket, this);  // make a thread of it
-                al.add(t);                                    // save it in the ArrayList
+                listenerHashMap.put(t.socket.getInetAddress().toString() + t.socket.getPort(), t);                                    // save it in the ArrayList
                 Thread thread = new Thread(t);
                 thread.start();
             }
             // I was asked to stop
             try {
                 serverSocket.close();
-                for (ClientConnectionListener tc : al) {
+                for (Map.Entry<String, ClientConnectionListener> entry : listenerHashMap.entrySet()) {
                     try {
+                        ClientConnectionListener tc = entry.getValue();
                         tc.sInput.close();
                         tc.sOutput.close();
                         tc.socket.close();

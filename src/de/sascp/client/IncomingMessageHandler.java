@@ -43,22 +43,18 @@ class IncomingMessageHandler implements Runnable {
     @Override
     public void run() {
         while (true) {
-            if (parent.incomingMessageQueue.isEmpty()) {
-                try {
-                    synchronized (parent.incomingMessageQueue) {
-                        parent.incomingMessageQueue.wait();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            ChatMessage currentMessage = null;
+            try {
+                currentMessage = parent.incomingMessageQueue.take();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            ChatMessage currentMessage = parent.incomingMessageQueue.remove();
             switch (currentMessage.getMessageType()) {
                 case (REQHEARTBEAT):
                     answerHeartbeat(parent.socket.getInetAddress(), parent.socket.getPort(), parent.sOutput);
                     break;
                 case (RESFINDSERVER):
-                    parent.incomingResFindServer.add((resFindServer) currentMessage);
+                    parent.incomingResFindServer.offer((resFindServer) currentMessage);
                     break;
             }
         }

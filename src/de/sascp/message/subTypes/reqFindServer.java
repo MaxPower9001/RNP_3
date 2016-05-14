@@ -11,6 +11,6 @@ import static de.sascp.protocol.Specification.REQFINDSERVER;
  */
 public class reqFindServer extends ChatMessage {
     public reqFindServer(InetAddress sourceIP, int sourcePort) {
-        super(sourceIP, sourcePort, REQFINDSERVER, 0);
+        super(sourceIP, sourcePort, sourceIP, sourcePort, REQFINDSERVER, 0);
     }
 }

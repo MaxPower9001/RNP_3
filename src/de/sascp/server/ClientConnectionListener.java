@@ -1,7 +1,7 @@
 package de.sascp.server;
 
 
-import de.sascp.message.ChatMessage;
+import de.sascp.message.subTypes.reqFindServer;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -9,7 +9,9 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Date;
 
-import static de.sascp.protocol.Specification.*;
+import static de.sascp.protocol.Specification.REQFINDSERVER;
+import static de.sascp.protocol.Specification.UPDATECLIENT;
+import static de.sascp.util.Utility.*;
 
 /**
  * One instance of this thread will run for each client
@@ -19,8 +21,6 @@ public class ClientConnectionListener implements Runnable {
     final Socket socket;
     // my unique id (easier for deconnection)
     final int id;
-    private final ServerProtocolParser serverProtocolParser;
-    private final ServerUnit serverUnit;
     private final Server parent;
     public ObjectInputStream sInput; //TODO ändern in InputStream
     ObjectOutputStream sOutput; //TODO ändern in OutputStream
@@ -31,8 +31,6 @@ public class ClientConnectionListener implements Runnable {
 
     // Constructore
     ClientConnectionListener(Socket socket, Server parent) {
-        this.serverProtocolParser = new ServerProtocolParser(this);
-        this.serverUnit = new ServerUnit(this);
         this.parent = parent;
         // a unique id
         id = ++Server.uniqueId;
@@ -59,38 +57,49 @@ public class ClientConnectionListener implements Runnable {
 
     // what will run forever
     public void run() {
+        boolean lookingForCommonHeader = true;
+        boolean lookingForPayload = true;
+        int version = -1;
+        int messageType = -1;
+        int length = -1;
+
         // to loop until LOGOUT
         boolean keepGoing = true;
-        while (keepGoing) {
-            // read a String (which is an object)
-            ChatMessage cm;
+        while (lookingForCommonHeader) {
+            byte[] headerBytes = new byte[CHLENGTH];
             try {
-                cm = (ChatMessage) sInput.readObject();
+                sInput.read(headerBytes);
             } catch (IOException e) {
-                parent.display(username + " Exception reading Streams: " + e);
-                break;
-            } catch (ClassNotFoundException e2) {
+                // TODO connection failed
                 break;
             }
 
-            // Switch on the type of message receive
-            switch (cm.getMessageType()) {
-                case REQFINDSERVER:
-                    // TODO Antwort auf REQFINDSERVER
-                    break;
-                case LOGOUT:
-                    parent.display(username + " disconnected with a LOGOUT message.");
-                    keepGoing = false;
-                    break;
-                case WHOISIN:
-                    writeMsg("List of the users connected at " + parent.getSimpleDateFormat().format(new Date()) + "\n");
-                    // scan al the users connected
-                    for (int i = 0; i < parent.getAl().size(); ++i) {
-                        ClientConnectionListener ct = parent.getAl().get(i);
-                        writeMsg((i + 1) + ") " + ct.username + " since " + ct.date);
-                    }
-                    break;
+            version = fromArray(headerBytes, 0); // Version number
+            messageType = fromArray(headerBytes, 4); // MessageType
+            length = fromArray(headerBytes, 8);  // Length
+
+            if (checkCommonHeader(version, messageType, length)) {
+                lookingForCommonHeader = false;
             }
+        }
+        while (lookingForPayload) {
+            if (messageType == UPDATECLIENT) {
+                // TODO Updateclient List einlesen bitte danke
+            } else {
+                byte[] payload = new byte[length];
+                try {
+                    sInput.read(payload);
+                } catch (IOException e) {
+                    // TODO connection failed
+                    break;
+                }
+                switch (messageType) {
+                    case (REQFINDSERVER):
+                        parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
+                        break;
+                }
+            }
+            lookingForPayload = false;
         }
         // remove myself from the arrayList containing the list of the
         // connected Clients

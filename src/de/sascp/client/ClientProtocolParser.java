@@ -3,10 +3,9 @@ package de.sascp.client;
 import de.sascp.message.subTypes.resFindServer;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import static de.sascp.protocol.Specification.*;
-import static de.sascp.util.Utility.CHLENGTH;
+import static de.sascp.util.Utility.*;
 
 /**
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
@@ -25,20 +24,6 @@ class ClientProtocolParser implements Runnable {
      */
 
     /**
-     * Checks the Common Header of a byte[] Stream against the protocol specification
-     *
-     * @return returns true if Common Header matches Protocol Specification
-     */
-    private static boolean checkCommonHeader(int version, int messageType, int length) {
-
-        return version == VERSION &&
-                messageType > LOWESTMESSAGETYPE &&
-                messageType < HIGHESTMESSAGETYPE &&
-                length >= 0;
-
-    }
-
-    /**
      * Checks message type specific header against protocol specification
      *
      * @param incomingData - byte[] Stream which will be checked
@@ -50,11 +35,6 @@ class ClientProtocolParser implements Runnable {
         // TODO
 
         return true;
-    }
-
-    private static int fromArray(byte[] payload, int offset) {
-        ByteBuffer buffer = ByteBuffer.wrap(payload, offset, 4);
-        return buffer.getInt();
     }
 
     public void run() {
@@ -95,13 +75,14 @@ class ClientProtocolParser implements Runnable {
                 }
                 switch (messageType) {
                     case (RESFINDSERVER):
-                        parent.incomingMessageQueue.add(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+                        parent.incomingMessageQueue.offer(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
                         parent.incomingMessageQueue.notify();
                         break;
                     case (REQHEARTBEAT):
 
                 }
             }
+            lookingForPayload = false;
         }
     }
 
