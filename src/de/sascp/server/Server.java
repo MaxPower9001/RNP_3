@@ -34,6 +34,8 @@ public class Server implements ChatProgramm, Runnable {
     // the boolean that will be turned of to stop the server
     private boolean keepGoing;
 
+    private UDPServer udpServer;
+
 
     public Server(ServerGUI serverGUI) {
         // GUI or not
@@ -42,7 +44,6 @@ public class Server implements ChatProgramm, Runnable {
         simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
         // ArrayList for the Client list
         listenerHashMap = new HashMap<>();
-        new Thread(new UDPServer(this)).start();
     }
 
     /*
@@ -122,6 +123,9 @@ public class Server implements ChatProgramm, Runnable {
         /* create socket server and wait for connection requests */
         try {
             // the socket used by the server
+            udpServer = new UDPServer(this);
+            new Thread(udpServer).start();
+            new Thread(new ServerUnit(this)).start();
             ServerSocket serverSocket = new ServerSocket(PORT);
 
             // infinite loop to wait for connections
@@ -160,6 +164,10 @@ public class Server implements ChatProgramm, Runnable {
             String msg = simpleDateFormat.format(new Date()) + " Exception on new ServerSocket: " + e + "\n";
             display(msg);
         }
+    }
+
+    public UDPServer getUdpServer() {
+        return udpServer;
     }
 }
 

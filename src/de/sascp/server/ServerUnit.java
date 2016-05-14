@@ -4,8 +4,6 @@ import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.resFindServer;
 import de.sascp.util.MessageBuilder;
 
-import java.io.OutputStream;
-
 import static de.sascp.protocol.Specification.REQFINDSERVER;
 
 /**
@@ -30,13 +28,11 @@ class ServerUnit implements Runnable {
             switch (currentMessage.getMessageType()) {
                 case (REQFINDSERVER):
                     answerRequestFindServer(currentMessage);
-                    break;
             }
         }
     }
 
     private void answerRequestFindServer(ChatMessage currentMessage) {
-        OutputStream outputStream = parent.getListenerHashMap().get(currentMessage.getSourceIP().toString() + currentMessage.getSourcePort()).sOutput;
-        MessageBuilder.buildMessage(new resFindServer(currentMessage.getSourceIP(), currentMessage.getSourcePort()), outputStream);
+        MessageBuilder.buildMessage(new resFindServer(currentMessage.getSourceIP(), currentMessage.getSourcePort()), parent.getUdpServer().getSocket());
     }
 }

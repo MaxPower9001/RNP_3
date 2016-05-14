@@ -3,12 +3,17 @@ package de.sascp.server;
 import de.sascp.message.subTypes.reqFindServer;
 
 import java.io.IOException;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
 
+import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.util.Utility.*;
 
 public class UDPServer implements Runnable {
     Server parent;
+    DatagramSocket socket;
+    private boolean keepGoing = true;
 
     public UDPServer(Server parent) {
         this.parent = parent;
@@ -16,37 +21,40 @@ public class UDPServer implements Runnable {
 
     @Override
     public void run() {
-        DatagramSocket socket = null;
-        try {
-            socket = new DatagramSocket(4242, InetAddress.getByName("127.0.0.1"));
-        } catch (SocketException e) {
-            e.printStackTrace();
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
-        boolean lookingForCommonHeader = true;
-        int version;
-        int messageType;
-        int length;
-
-        while (lookingForCommonHeader) {
-            DatagramPacket packet = new DatagramPacket(new byte[CHLENGTH], CHLENGTH);
             try {
-                socket.receive(packet);
-            } catch (IOException e) {
+                socket = new DatagramSocket(PORT);
+            } catch (SocketException e) {
                 e.printStackTrace();
             }
+        while (keepGoing) {
 
-            byte[] headerBytes = packet.getData();
+            DatagramPacket packet = new DatagramPacket(new byte[CHLENGTH], CHLENGTH);
+            boolean lookingForCommonHeader = true;
+            int version;
+            int messageType;
+            int length;
+            while (lookingForCommonHeader) {
+                try {
+                    socket.receive(packet);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
 
-            version = fromArray(headerBytes, 0); // Version number
-            messageType = fromArray(headerBytes, 4); // MessageType
-            length = fromArray(headerBytes, 8);  // Length
+                byte[] headerBytes = packet.getData();
 
-            if (checkCommonHeader(version, messageType, length)) {
-                lookingForCommonHeader = false;
+                version = fromArray(headerBytes, 0); // Version number
+                messageType = fromArray(headerBytes, 4); // MessageType
+                length = fromArray(headerBytes, 8);  // Length
+
+                if (checkCommonHeader(version, messageType, length)) {
+                    lookingForCommonHeader = false;
+                }
             }
+            parent.incomingMessageQueue.offer(new reqFindServer(packet.getAddress(), packet.getPort()));
         }
-        parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
+    }
+
+    public DatagramSocket getSocket() {
+        return socket;
     }
 }

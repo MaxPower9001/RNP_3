@@ -75,8 +75,11 @@ class ClientProtocolParser implements Runnable {
                 }
                 switch (messageType) {
                     case (RESFINDSERVER):
-                        parent.incomingMessageQueue.offer(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
-                        parent.incomingMessageQueue.notify();
+                        try {
+                            parent.incomingMessageQueue.put(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
                         break;
                     case (REQHEARTBEAT):
 

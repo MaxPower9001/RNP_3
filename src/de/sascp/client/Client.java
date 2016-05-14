@@ -23,7 +23,7 @@ import static de.sascp.protocol.Specification.TIMEOUT;
 /*
  * The Client that can be run both as a console or a GUI
  */
-class Client implements ChatProgramm {
+public class Client implements ChatProgramm {
     // if I use a GUI or not
     public final ClientGUI clientGUI;
     public final LinkedBlockingQueue<ChatMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
@@ -101,7 +101,7 @@ class Client implements ChatProgramm {
      * To send a message to the serverip // TODO vorher umwandeln in byte[] Stream
      */
     private void sendMessage(reqFindServer msg) {
-        MessageBuilder.buildMessage(msg, sOutput);
+        MessageBuilder.buildMessage(msg, incomingResFindServer);
     }
 
     /*
@@ -129,8 +129,7 @@ class Client implements ChatProgramm {
     }
 
     public void reqFindServer() {
-        sendMessage(new reqFindServer(Utility.getBroadcastIP(), 4242));
-        incomingResFindServer.clear();
+        sendMessage(new reqFindServer(Utility.getBroadcastIP(), PORT));
 
         Timer time = new Timer();
         time.schedule(new TimerTask() {
@@ -151,8 +150,9 @@ class Client implements ChatProgramm {
                         }
                     }
                     clientGUI.append("Server gefunden!");
-                    clientGUI.setServerTextField(lowestIP.toString());
+                    clientGUI.setServerTextField(lowestIP.getHostAddress());
                 }
+                incomingResFindServer.clear();
             }
         }, TIMEOUT);
     }
