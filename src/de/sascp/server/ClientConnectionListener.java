@@ -3,11 +3,8 @@ package de.sascp.server;
 
 import de.sascp.message.subTypes.reqFindServer;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
-import java.util.Date;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
@@ -21,10 +18,11 @@ class ClientConnectionListener implements Runnable {
     // my unique id (easier for deconnection)
     final int id;
     private final Server parent;
-    public ObjectInputStream sInput; //TODO ändern in InputStream
-    ObjectOutputStream sOutput; //TODO ändern in OutputStream
+    InputStream sInput; //TODO ändern in InputStream
+    OutputStream sOutput; //TODO ändern in OutputStream
     // the Username of the Client
     String username;
+    private boolean keepGoing = true;
 
     // Constructore
     ClientConnectionListener(Socket socket, Server parent) {
@@ -38,18 +36,10 @@ class ClientConnectionListener implements Runnable {
             // create output first
             sOutput = new ObjectOutputStream(socket.getOutputStream());
             sInput = new ObjectInputStream(socket.getInputStream());
-            // read the username
-            username = (String) sInput.readObject();
-            parent.display(username + " just connected.");
         } catch (IOException e) {
             parent.display("Exception creating new Input/output Streams: " + e);
             return;
         }
-        // have to catch ClassNotFoundException
-        // but I read a String, I am sure it will work
-        catch (ClassNotFoundException e) {
-        }
-        String date = new Date().toString() + "\n";
     }
 
     // what will run forever
@@ -61,48 +51,49 @@ class ClientConnectionListener implements Runnable {
         int length = -1;
 
         // to loop until LOGOUT
-        boolean keepGoing = true;
-        while (lookingForCommonHeader) {
-            byte[] headerBytes = new byte[CHLENGTH];
-            try {
-                sInput.read(headerBytes);
-            } catch (IOException e) {
-                // TODO connection failed
-                break;
-            }
-
-            version = fromArray(headerBytes, 0); // Version number
-            messageType = fromArray(headerBytes, 4); // MessageType
-            length = fromArray(headerBytes, 8);  // Length
-
-            if (checkCommonHeader(version, messageType, length)) {
-                lookingForCommonHeader = false;
-            }
-        }
-        while (lookingForPayload) {
-            if (messageType == UPDATECLIENT) {
-                // TODO Updateclient List einlesen bitte danke
-            } else {
-                byte[] payload = new byte[length];
+        while (keepGoing) {
+            while (lookingForCommonHeader) {
+                byte[] headerBytes = new byte[CHLENGTH];
                 try {
-                    sInput.read(payload);
+                    sInput.read(headerBytes);
                 } catch (IOException e) {
                     // TODO connection failed
                     break;
                 }
-                switch (messageType) {
-                    case (REQFINDSERVER):
-                        parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
-                        break;
-                    case (REQLOGIN):
 
-                        break;
-                    default:
-                        parent.display("This is Microsoft Sam the Servers default switch-bracket");
-                        break;
+                version = fromArray(headerBytes, 0); // Version number
+                messageType = fromArray(headerBytes, 4); // MessageType
+                length = fromArray(headerBytes, 8);  // Length
+
+                if (checkCommonHeader(version, messageType, length)) {
+                    lookingForCommonHeader = false;
                 }
             }
-            lookingForPayload = false;
+            while (lookingForPayload) {
+                if (messageType == UPDATECLIENT) {
+                    // TODO Updateclient List einlesen bitte danke
+                } else {
+                    byte[] payload = new byte[length];
+                    try {
+                        sInput.read(payload);
+                    } catch (IOException e) {
+                        // TODO connection failed
+                        break;
+                    }
+                    switch (messageType) {
+                        case (REQFINDSERVER):
+                            parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
+                            break;
+                        case (REQLOGIN):
+
+                            break;
+                        default:
+                            parent.display("This is Microsoft Sam the Servers default switch-bracket");
+                            break;
+                    }
+                }
+                lookingForPayload = false;
+            }
         }
         // remove myself from the arrayList containing the list of the
         // connected Clients
@@ -136,15 +127,10 @@ class ClientConnectionListener implements Runnable {
             close();
             return false;
         }
-        // write the message to the stream
-        try {
-            sOutput.writeObject(msg);
-        }
-        // if an error occurs, do not abort just inform the user
-        catch (IOException e) {
-            parent.display("Error sending message to " + username);
-            parent.display(e.toString());
-        }
         return true;
+    }
+
+    public void setKeepGoing(boolean keepGoing) {
+        this.keepGoing = keepGoing;
     }
 }

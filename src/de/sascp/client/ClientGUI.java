@@ -46,6 +46,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         JPanel serverAndPort = new JPanel(new GridLayout(1, 5, 1, 3));
         // the two JTextField with default value for server address and port number
         tfServer = new JTextField("");
+        tfServer.setEnabled(false);
 
         serverAndPort.add(new JLabel("Server Address:  "));
         serverAndPort.add(tfServer);
@@ -161,10 +162,11 @@ public class ClientGUI extends JFrame implements ActionListener {
                 return;
             }
             // empty serverAddress ignore it
-            String server = tfServer.getText().trim();
-            if (server.length() == 0)
-                return;
-            client.setServerip(server);
+            // You are not supposed to input Server IP by hand
+//            String server = tfServer.getText().trim();
+//            if (server.length() == 0)
+//                return;
+//            client.setServerip(server);
             client.setUsername(username);
             // test if we can start the Client
             if (!client.start())

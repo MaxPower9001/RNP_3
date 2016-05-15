@@ -28,17 +28,22 @@ class Client implements ChatProgramm {
     final LinkedBlockingQueue<ChatMessage> incomingMessageQueue;
     final ConcurrentLinkedQueue<resFindServer> incomingResFindServer;
     final ConcurrentLinkedQueue<updateClient> incomingUpdateClient;
+
     // Threads for handling incoming messages
     private final IncomingMessageHandler incomingMessageHandler;
     private final ClientProtocolParser clientProtocolParser;
+
     // Server instance, which can be used if needed
     private final Server server;
+
     // for I/O
     Socket socket;
     InputStream sInput;
     OutputStream sOutput;
+
     // List of all connected Clients in the current session
     private ArrayList<ClientInfomartion> connectedClients;
+
     // The server ip and the client's username
     private String serverip;
     private String username;

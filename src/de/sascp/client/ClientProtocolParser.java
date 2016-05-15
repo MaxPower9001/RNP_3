@@ -42,6 +42,7 @@ class ClientProtocolParser implements Runnable {
                     parent.sInput.read(headerBytes);
                 } catch (IOException e) {
                     parent.display("Error reading header bytes - pls do sth");
+                    e.printStackTrace();
                     // Stop looking for header data
                     break;
                 }
@@ -105,7 +106,7 @@ class ClientProtocolParser implements Runnable {
                     parent.incomingUpdateClient.add(new updateClient(parent.socket.getInetAddress(), parent.socket.getPort(), clientList));
                 }
                 // Every other Message type's length
-                else {
+                else if (length > 0) {
                     // prepare payload byte[] according to message's length parameter
                     byte[] payload = new byte[length];
 
