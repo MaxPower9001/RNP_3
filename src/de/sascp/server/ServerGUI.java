@@ -44,8 +44,6 @@ public class ServerGUI extends JFrame implements WindowListener {
         // need to be informed when the user click the close button on the frame
         addWindowListener(this);
         setSize(400, 600);
-        setVisible(true);
-
         server = new Server(this);
     }
 

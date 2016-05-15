@@ -31,7 +31,7 @@ public class Utility {
     }
 
     /**
-     * Checks the Common Header of a byte[] Stream against the protocol specification
+     * Checks the Common Header against the protocol specification
      *
      * @return returns true if Common Header matches Protocol Specification
      */

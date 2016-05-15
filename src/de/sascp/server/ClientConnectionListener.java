@@ -9,14 +9,13 @@ import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Date;
 
-import static de.sascp.protocol.Specification.REQFINDSERVER;
-import static de.sascp.protocol.Specification.UPDATECLIENT;
+import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
 
 /**
  * One instance of this thread will run for each client
  */
-public class ClientConnectionListener implements Runnable {
+class ClientConnectionListener implements Runnable {
     // the socket where to listen/talk
     final Socket socket;
     // my unique id (easier for deconnection)
@@ -26,8 +25,6 @@ public class ClientConnectionListener implements Runnable {
     ObjectOutputStream sOutput; //TODO ändern in OutputStream
     // the Username of the Client
     String username;
-    // the date I connect
-    private String date;
 
     // Constructore
     ClientConnectionListener(Socket socket, Server parent) {
@@ -52,7 +49,7 @@ public class ClientConnectionListener implements Runnable {
         // but I read a String, I am sure it will work
         catch (ClassNotFoundException e) {
         }
-        date = new Date().toString() + "\n";
+        String date = new Date().toString() + "\n";
     }
 
     // what will run forever
@@ -96,6 +93,12 @@ public class ClientConnectionListener implements Runnable {
                 switch (messageType) {
                     case (REQFINDSERVER):
                         parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
+                        break;
+                    case (REQLOGIN):
+
+                        break;
+                    default:
+                        parent.display("This is Microsoft Sam the Servers default switch-bracket");
                         break;
                 }
             }

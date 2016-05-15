@@ -7,9 +7,9 @@ import java.nio.ByteBuffer;
  * Protocol Parser presents functionality for checking Common Header and Message Type specific Header Information
  * against the Protocol Specification
  */
-public class ServerProtocolParser {
+class ServerProtocolParser {
 
-    public final Server parent;
+    private final Server parent;
 
     public ServerProtocolParser(Server parent) {
         this.parent = parent;

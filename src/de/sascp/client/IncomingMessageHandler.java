@@ -3,13 +3,13 @@ package de.sascp.client;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.resFindServer;
 import de.sascp.message.subTypes.resHeartbeat;
+import de.sascp.message.subTypes.updateClient;
 import de.sascp.util.MessageBuilder;
 
 import java.io.OutputStream;
 import java.net.InetAddress;
 
-import static de.sascp.protocol.Specification.REQHEARTBEAT;
-import static de.sascp.protocol.Specification.RESFINDSERVER;
+import static de.sascp.protocol.Specification.*;
 
 /**
  * Converts byte[] Streams checked by the Protocol Parser into ChatMessage Objects and answers Heartbeat-Requests
@@ -17,6 +17,7 @@ import static de.sascp.protocol.Specification.RESFINDSERVER;
 class IncomingMessageHandler implements Runnable {
 
     private final Client parent;
+    private boolean keepGoing;
 
     public IncomingMessageHandler(Client parent) {
         this.parent = parent;
@@ -42,13 +43,14 @@ class IncomingMessageHandler implements Runnable {
 
     @Override
     public void run() {
-        while (true) {
+        while (keepGoing) {
             ChatMessage currentMessage = null;
             try {
                 currentMessage = parent.incomingMessageQueue.take();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            assert currentMessage != null;
             switch (currentMessage.getMessageType()) {
                 case (REQHEARTBEAT):
                     answerHeartbeat(parent.socket.getInetAddress(), parent.socket.getPort(), parent.sOutput);
@@ -56,7 +58,20 @@ class IncomingMessageHandler implements Runnable {
                 case (RESFINDSERVER):
                     parent.incomingResFindServer.offer((resFindServer) currentMessage);
                     break;
+                case (UPDATECLIENT):
+                    updateClient updateClient = (updateClient) currentMessage;
+                    if (updateClient.getSourceIP().getHostAddress().equals(parent.getServerip())) {
+                        parent.setConnectedClients(updateClient.getClientInfomartion());
+                    }
+                    break;
+                default:
+                    parent.display("Nothing found - I guess nobody wants to talk to you...");
+                    break;
             }
         }
+    }
+
+    public void stopRunning() {
+        this.keepGoing = false;
     }
 }

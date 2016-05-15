@@ -1,7 +1,9 @@
 package de.sascp.util;
 
+import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.reqFindServer;
+import de.sascp.message.subTypes.reqLogin;
 import de.sascp.message.subTypes.resFindServer;
 import de.sascp.message.subTypes.resHeartbeat;
 
@@ -11,7 +13,9 @@ import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static de.sascp.protocol.Specification.*;
@@ -22,10 +26,10 @@ import static de.sascp.util.Utility.*;
  */
 public class MessageBuilder {
     /**
-     * Converts an ChatMessage Object into Protocol-specific byte Stream
      *
-     * @param chatMessage - ChatMessage Object, which will be converted
-     * @return - byte[] Stream for outgoing data
+     * @param chatMessage
+     * @param incomingMessageQueue
+     * @return
      */
     public static boolean buildMessage(reqFindServer chatMessage, ConcurrentLinkedQueue incomingMessageQueue) {
         byte[] outgoingMessage = buildCommonHeader(chatMessage);
@@ -48,17 +52,21 @@ public class MessageBuilder {
             try {
                 toSocket.setSoTimeout(TIMEOUT);
                 toSocket.receive(incomingPacket);
+            } catch (SocketTimeoutException timeoutException) {
+
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            byte[] headerBytes = incomingPacket.getData();
+            if (incomingPacket.getData().length == CHLENGTH) {
+                byte[] headerBytes = incomingPacket.getData();
 
-            int version = fromArray(headerBytes, 0); // Version number
-            int messageType = fromArray(headerBytes, 4); // MessageType
-            int length = fromArray(headerBytes, 8);  // Length
+                int version = fromArray(headerBytes, HEADERVERSIONOFFSET); // Version number
+                int messageType = fromArray(headerBytes, HEADERTYPEOFFSET); // MessageType
+                int length = fromArray(headerBytes, HEADERLENGTHOFFSET);  // Length
 
-            if (checkCommonHeader(version, messageType, length)) {
-                incomingMessageQueue.offer(new resFindServer(incomingPacket.getAddress(), incomingPacket.getPort()));
+                if (checkCommonHeader(version, messageType, length)) {
+                    incomingMessageQueue.offer(new resFindServer(incomingPacket.getAddress(), incomingPacket.getPort()));
+                }
             }
         }
         toSocket.close();
@@ -96,6 +104,25 @@ public class MessageBuilder {
     }
 
     public static boolean buildMessage(resHeartbeat resHeartbeat, OutputStream outputStream) {
+        return false;
+    }
+
+    public static boolean buildMessage(reqLogin chatMessage, OutputStream outputStream) {
+        byte[] outgoingMessage = buildCommonHeader(chatMessage);
+
+        byte[] username = chatMessage.getUsername().getBytes(Charset.forName(CHARSET));
+
+        ByteOutputStream byteOutputStream = new ByteOutputStream();
+
+        byteOutputStream.write(outgoingMessage);
+        byteOutputStream.write(username);
+
+        try {
+            outputStream.write(byteOutputStream.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         return false;
     }
 }

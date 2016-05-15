@@ -5,13 +5,17 @@ package de.sascp.protocol;
  */
 public class Specification {
 
+    public static final String CHARSET = "ASCII";
+    public static final int HEADERVERSIONOFFSET = 0;
+    public static final int HEADERTYPEOFFSET = 4;
+    public static final int HEADERLENGTHOFFSET = 8;
+
     // Timeout
     public static final int TIMEOUT = 2000;
     // Current Protocol Version
     public static final int VERSION = 1;
     // Port Number
     public static final int PORT = 4242;
-    // Message Types
 
     // example types
     public static final int WHOISIN = 1000;

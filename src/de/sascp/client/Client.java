@@ -2,8 +2,7 @@ package de.sascp.client;
 
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.reqFindServer;
-import de.sascp.message.subTypes.resFindServer;
+import de.sascp.message.subTypes.*;
 import de.sascp.server.Server;
 import de.sascp.util.MessageBuilder;
 import de.sascp.util.Utility;
@@ -11,6 +10,7 @@ import de.sascp.util.Utility;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,70 +20,138 @@ import java.util.concurrent.LinkedBlockingQueue;
 import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.protocol.Specification.TIMEOUT;
 
-/*
- * The Client that can be run both as a console or a GUI
- */
-public class Client implements ChatProgramm {
-    // if I use a GUI or not
-    public final ClientGUI clientGUI;
-    public final LinkedBlockingQueue<ChatMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
-    final ConcurrentLinkedQueue<resFindServer> incomingResFindServer = new ConcurrentLinkedQueue<>();
+class Client implements ChatProgramm {
+    // Client Gui Component
+    final ClientGUI clientGUI;
+
+    // Queues for incoming Messages
+    final LinkedBlockingQueue<ChatMessage> incomingMessageQueue;
+    final ConcurrentLinkedQueue<resFindServer> incomingResFindServer;
+    final ConcurrentLinkedQueue<updateClient> incomingUpdateClient;
+    // Threads for handling incoming messages
     private final IncomingMessageHandler incomingMessageHandler;
     private final ClientProtocolParser clientProtocolParser;
+    // Server instance, which can be used if needed
+    private final Server server;
     // for I/O
-    public InputStream sInput;
-    public Socket socket;
+    Socket socket;
+    InputStream sInput;
     OutputStream sOutput;
-    // the serverip and the username
-    private Server server;
+    // List of all connected Clients in the current session
+    private ArrayList<ClientInfomartion> connectedClients;
+    // The server ip and the client's username
     private String serverip;
     private String username;
-    private ArrayList<Runnable> waiterList = new ArrayList<>();
 
 
-    /*
-     * Constructor call when used from a GUI
-     * in console mode the ClienGUI parameter is null
-     */
     public Client(ClientGUI clientGUI, Server server) {
+        // Instantiate Lists and Queues
+        connectedClients = new ArrayList<>();
+        incomingUpdateClient = new ConcurrentLinkedQueue<>();
+        incomingResFindServer = new ConcurrentLinkedQueue<>();
+        incomingMessageQueue = new LinkedBlockingQueue<>();
+
+        // Instantiate IMH and PP, will be started when needed
         this.incomingMessageHandler = new IncomingMessageHandler(this);
         this.clientProtocolParser = new ClientProtocolParser(this);
+
         this.server = server;
-        this.serverip = "";
-        this.username = "";
-        // save if we are in GUI mode or not
         this.clientGUI = clientGUI;
+
+        this.username = "";
+        this.serverip = "";
     }
 
-    /*
-     * To start the dialog
+    /**
+     * Called when login button on GUI is pressed.
+     *
+     * @return returns <code>false</code> if:
+     * <p>- not able to create Socket to Server</p>
+     * <p>- Server IP faulty</p>
+     * <p>- Input or Output Stream not created</p>
+     * <p>- reqLogin function returns with false</p>
      */
     boolean start() {
-        // try to connect to the serverip
+        // establishing socket to server for TCP communication
         try {
             socket = new Socket(serverip, PORT);
-        }
-        // if it failed not much I can so
-        catch (Exception ec) {
+        } catch (Exception ec) {
             display("Error connectiong to serverip:" + ec);
-            return true;
+            return false;
         }
 
-        String msg = "Connection accepted " + socket.getInetAddress() + ":" + socket.getPort();
+        String msg = "Socket established to " + socket.getInetAddress() + ":" + socket.getPort();
         display(msg);
 
-		/* Creating both Data Stream */
+		/* Creating both Data Streams */
         try {
             sInput = new ObjectInputStream(socket.getInputStream());
             sOutput = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException eIO) {
             display("Exception creating new Input/output Streams: " + eIO);
-            return true;
+            return false;
         }
 
-        // creates the Thread to listen from the serverip
+        // Create and start Threads for IMH and PP
         new Thread(clientProtocolParser).start();
         new Thread(incomingMessageHandler).start();
+        /*
+         Send Login Message according to Protocol specification
+         If failed, close socket and return false
+        */
+        if (!reqLogin()) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return false;
+        } else {
+            return true;
+        }
+    }
+
+    /**
+     * Sends reqLogin Package to Server. Checks if updateClient
+     *
+     * @return
+     */
+    private boolean reqLogin() {
+        final boolean[] connected = {false};
+        reqLogin loginMessage;
+        try {
+            loginMessage = new reqLogin(InetAddress.getByName(this.serverip), this.username);
+        } catch (UnknownHostException e) {
+            display("Unable to resolve Server IP");
+            return connected[0];
+        }
+        MessageBuilder.buildMessage(loginMessage, sOutput);
+        Timer time = new Timer();
+        time.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (connectedClients.isEmpty() || !findOwnUsername()) {
+                    display("Bad Login - maybe try another Username");
+                } else {
+                    display("Logged in - you did it!");
+
+                    connected[0] = true;
+                }
+                incomingUpdateClient.clear();
+            }
+        }, TIMEOUT);
+        return connected[0];
+    }
+
+    private boolean findOwnUsername() {
+        for (ClientInfomartion clientInfomartion : connectedClients) {
+            if (
+                    clientInfomartion.clientIP == socket.getLocalAddress() &&
+                            clientInfomartion.clientPort == socket.getLocalPort() &&
+                            clientInfomartion.clientUsername == username) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -109,6 +177,8 @@ public class Client implements ChatProgramm {
      * Close the Input/Output streams and disconnect not much to do in the catch clause
      */
     private void disconnect() {
+        incomingMessageQueue.offer(new resHeartbeat(null, 0));
+        incomingMessageHandler.stopRunning();
         try {
             if (sInput != null) sInput.close();
         } catch (Exception e) {
@@ -125,6 +195,7 @@ public class Client implements ChatProgramm {
         // inform the GUI
         if (clientGUI != null)
             clientGUI.connectionFailed();
+        clientProtocolParser.stopRunning();
 
     }
 
@@ -136,10 +207,11 @@ public class Client implements ChatProgramm {
             @Override
             public void run() {
                 if (incomingResFindServer.isEmpty()) {
-                    clientGUI.append("Keinen Server gefunden!\n\n");
-                    clientGUI.append("Starte eigenen Server...\n");
+                    display("No server found!");
+                    display("Starting own server...");
                     new Thread(server).start();
-                    clientGUI.append("Server gestartet!\n\n");
+                    server.showGUI();
+                    display("Server started");
                     clientGUI.setServerTextField("localhost");
                     clientGUI.disableFindServerButton();
                 } else {
@@ -149,7 +221,8 @@ public class Client implements ChatProgramm {
                             lowestIP = r.getDestinationIP();
                         }
                     }
-                    clientGUI.append("Server gefunden!");
+                    display("Server found!");
+                    serverip = lowestIP.getHostAddress();
                     clientGUI.setServerTextField(lowestIP.getHostAddress());
                 }
                 incomingResFindServer.clear();
@@ -169,8 +242,16 @@ public class Client implements ChatProgramm {
         this.username = username;
     }
 
+    public String getServerip() {
+        return serverip;
+    }
+
     public void setServerip(String serverip) {
         this.serverip = serverip;
+    }
+
+    public void setConnectedClients(ArrayList<ClientInfomartion> connectedClients) {
+        this.connectedClients = connectedClients;
     }
 }
 

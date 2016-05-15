@@ -169,6 +169,10 @@ public class Server implements ChatProgramm, Runnable {
     public UDPServer getUdpServer() {
         return udpServer;
     }
+
+    public void showGUI() {
+        this.serverGUI.setVisible(true);
+    }
 }
 
 

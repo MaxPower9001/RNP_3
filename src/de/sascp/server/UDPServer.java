@@ -11,9 +11,8 @@ import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.util.Utility.*;
 
 public class UDPServer implements Runnable {
-    Server parent;
-    DatagramSocket socket;
-    private boolean keepGoing = true;
+    private final Server parent;
+    private DatagramSocket socket;
 
     public UDPServer(Server parent) {
         this.parent = parent;
@@ -26,6 +25,7 @@ public class UDPServer implements Runnable {
             } catch (SocketException e) {
                 e.printStackTrace();
             }
+        boolean keepGoing = true;
         while (keepGoing) {
 
             DatagramPacket packet = new DatagramPacket(new byte[CHLENGTH], CHLENGTH);

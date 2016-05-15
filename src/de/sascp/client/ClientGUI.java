@@ -130,7 +130,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         Object o = e.getSource();
         // if it is the Logout button
         if (o == logout) {
-            client.display("Logout gibs nicht im SASCP - hier wird gechattet bis die Finger glühen!");
+            client.display("Nope...");
             return;
         }
         // if it the who is in button
@@ -156,8 +156,10 @@ public class ClientGUI extends JFrame implements ActionListener {
             // ok it is a connection request
             String username = tf.getText().trim();
             // empty username ignore it
-            if (username.length() == 0)
+            if (username.length() == 0 || username.length() > 255) {
+                append("The length of your username does not fit into protocol specification.");
                 return;
+            }
             // empty serverAddress ignore it
             String server = tfServer.getText().trim();
             if (server.length() == 0)
@@ -165,7 +167,7 @@ public class ClientGUI extends JFrame implements ActionListener {
             client.setServerip(server);
             client.setUsername(username);
             // test if we can start the Client
-            if (client.start())
+            if (!client.start())
                 return;
             tf.setText("");
             label.setText("Enter your message below");
