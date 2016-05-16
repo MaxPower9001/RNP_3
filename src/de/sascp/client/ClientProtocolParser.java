@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
@@ -20,6 +20,7 @@ class ClientProtocolParser implements Runnable {
 
     private final Client parent;
     private boolean keepGoing = true;
+    private boolean notLoggedIn = true;
 
     public ClientProtocolParser(Client parent) {
         this.parent = parent;
@@ -35,6 +36,7 @@ class ClientProtocolParser implements Runnable {
             int length = -1;
 
             // Look for Common Header, until one received
+            // As long the client is not logged in, we wait for an resFindServer Package transfered via UDP
             while (lookingForCommonHeader) {
                 // Headerbyte with specific length
                 byte[] headerBytes = new byte[CHLENGTH];
@@ -47,9 +49,9 @@ class ClientProtocolParser implements Runnable {
                     break;
                 }
                 // Seperate values inside headerBytes
-                version = fromArray(headerBytes, HEADERVERSIONOFFSET); // Version number
-                messageType = fromArray(headerBytes, HEADERTYPEOFFSET); // MessageType
-                length = fromArray(headerBytes, HEADERLENGTHOFFSET);  // Length
+                version = intFromFourBytes(headerBytes, HEADERVERSIONOFFSET, 4); // Version number
+                messageType = intFromFourBytes(headerBytes, HEADERTYPEOFFSET, 4); // MessageType
+                length = intFromFourBytes(headerBytes, HEADERLENGTHOFFSET, 4);  // Length
 
                 // Check if correct Common Header
                 if (checkCommonHeader(version, messageType, length)) {
@@ -61,7 +63,7 @@ class ClientProtocolParser implements Runnable {
                 // Message tyoe UPDATECLIENT's length meaning differs from other packets
                 if (messageType == UPDATECLIENT) {
                     // Prepare list to store seperate client record as ClientInformation
-                    ArrayList<ClientInfomartion> clientList = new ArrayList<>();
+                    HashSet<ClientInfomartion> clientList = new HashSet<>();
                     // Iterate over each record, represented by message's length
                     for (int i = 1; i <= length; i++) {
                         // prepare byte[] for Client's ip, port, usernamelength and reserved bits
@@ -82,7 +84,7 @@ class ClientProtocolParser implements Runnable {
                             break;
                         }
                         // after username length is acquired prepare byte[] to read username into
-                        byte[] recordUsername = new byte[fromArray(recordUsernameLength, 0)];
+                        byte[] recordUsername = new byte[recordUsernameLength[0]];
                         // read username from input stream
                         try {
                             parent.sInput.read(recordUsername);
@@ -100,10 +102,18 @@ class ClientProtocolParser implements Runnable {
                         String username = new String(recordUsername);
 
                         // add new ClientInformation to list for updateClient Message
-                        clientList.add(new ClientInfomartion(ip, fromArray(recordPort, 0), username, parent.getServerip() == ip.getHostAddress()));
+                        clientList.add(new ClientInfomartion(ip, intFromTwoBytes(recordPort), username, parent.socket.getInetAddress() == ip));
                     }
+                    clientList.add(new ClientInfomartion(parent.socket.getInetAddress(), parent.socket.getPort(), "", true));
                     // after all the ClientInformation are added, create new updateClient Message and push to parent
-                    parent.incomingUpdateClient.add(new updateClient(parent.socket.getInetAddress(), parent.socket.getPort(), clientList));
+                    updateClient updateClient = new updateClient(null, 0, clientList);
+                    updateClient.setSourceIP(parent.socket.getInetAddress());
+                    updateClient.setSourcePort(parent.socket.getPort());
+                    if (parent.incomingMessageQueue.offer(updateClient)) {
+                        parent.display("Update Client List received");
+                    } else {
+                        parent.display("Update Client List thrown away!");
+                    }
                 }
                 // Every other Message type's length
                 else if (length > 0) {
@@ -121,7 +131,8 @@ class ClientProtocolParser implements Runnable {
                     // according to message type put message into incomingMessageQueue for IMH
                     switch (messageType) {
                         case (RESFINDSERVER):
-                            parent.incomingMessageQueue.offer(new resFindServer(parent.socket.getInetAddress(), parent.socket.getPort()));
+                            resFindServer resFindServer = new resFindServer(parent.socket.getLocalAddress(), parent.socket.getLocalPort(), parent.socket.getInetAddress(), parent.socket.getPort());
+                            parent.incomingMessageQueue.offer(resFindServer);
                             break;
                         case (REQHEARTBEAT):
                             break;

@@ -2,16 +2,21 @@ package de.sascp.client;
 
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.*;
+import de.sascp.message.subTypes.reqFindServer;
+import de.sascp.message.subTypes.reqLogin;
+import de.sascp.message.subTypes.resFindServer;
+import de.sascp.message.subTypes.resHeartbeat;
 import de.sascp.server.Server;
 import de.sascp.util.MessageBuilder;
 import de.sascp.util.Utility;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,7 +32,6 @@ class Client implements ChatProgramm {
     // Queues for incoming Messages
     final LinkedBlockingQueue<ChatMessage> incomingMessageQueue;
     final ConcurrentLinkedQueue<resFindServer> incomingResFindServer;
-    final ConcurrentLinkedQueue<updateClient> incomingUpdateClient;
 
     // Threads for handling incoming messages
     private final IncomingMessageHandler incomingMessageHandler;
@@ -42,7 +46,7 @@ class Client implements ChatProgramm {
     OutputStream sOutput;
 
     // List of all connected Clients in the current session
-    private ArrayList<ClientInfomartion> connectedClients;
+    private HashSet<ClientInfomartion> connectedClients;
 
     // The server ip and the client's username
     private String serverip;
@@ -51,8 +55,7 @@ class Client implements ChatProgramm {
 
     public Client(ClientGUI clientGUI, Server server) {
         // Instantiate Lists and Queues
-        connectedClients = new ArrayList<>();
-        incomingUpdateClient = new ConcurrentLinkedQueue<>();
+        connectedClients = new HashSet<>();
         incomingResFindServer = new ConcurrentLinkedQueue<>();
         incomingMessageQueue = new LinkedBlockingQueue<>();
 
@@ -85,13 +88,10 @@ class Client implements ChatProgramm {
             return false;
         }
 
-        String msg = "Socket established to " + socket.getInetAddress() + ":" + socket.getPort();
-        display(msg);
-
 		/* Creating both Data Streams */
         try {
-            sInput = new ObjectInputStream(socket.getInputStream());
-            sOutput = new ObjectOutputStream(socket.getOutputStream());
+            sInput = socket.getInputStream();
+            sOutput = socket.getOutputStream();
         } catch (IOException eIO) {
             display("Exception creating new Input/output Streams: " + eIO);
             return false;
@@ -104,16 +104,8 @@ class Client implements ChatProgramm {
          Send Login Message according to Protocol specification
          If failed, close socket and return false
         */
-        if (!reqLogin()) {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            return false;
-        } else {
-            return true;
-        }
+        reqLogin();
+        return true;
     }
 
     /**
@@ -121,14 +113,12 @@ class Client implements ChatProgramm {
      *
      * @return
      */
-    private boolean reqLogin() {
-        final boolean[] connected = {false};
-        reqLogin loginMessage;
+    private void reqLogin() {
+        reqLogin loginMessage = null;
         try {
-            loginMessage = new reqLogin(InetAddress.getByName(this.serverip), this.username);
+            loginMessage = new reqLogin(InetAddress.getByName(this.serverip), this.username, 0);
         } catch (UnknownHostException e) {
             display("Unable to resolve Server IP");
-            return connected[0];
         }
         MessageBuilder.buildMessage(loginMessage, sOutput);
         Timer time = new Timer();
@@ -139,21 +129,17 @@ class Client implements ChatProgramm {
                     display("Bad Login - maybe try another Username");
                 } else {
                     display("Logged in - you did it!");
-
-                    connected[0] = true;
                 }
-                incomingUpdateClient.clear();
             }
         }, TIMEOUT);
-        return connected[0];
     }
 
     private boolean findOwnUsername() {
         for (ClientInfomartion clientInfomartion : connectedClients) {
             if (
-                    clientInfomartion.clientIP == socket.getLocalAddress() &&
-                            clientInfomartion.clientPort == socket.getLocalPort() &&
-                            clientInfomartion.clientUsername == username) {
+                    clientInfomartion.getClientIP().equals(socket.getLocalAddress()) &&
+                            clientInfomartion.getClientPort() == socket.getLocalPort() &&
+                            clientInfomartion.getClientUsername().equals(username)) {
                 return true;
             }
         }
@@ -217,13 +203,13 @@ class Client implements ChatProgramm {
                     new Thread(server).start();
                     server.showGUI();
                     display("Server started");
-                    clientGUI.setServerTextField("localhost");
+                    clientGUI.setServerTextField("127.0.0.1");
                     clientGUI.disableFindServerButton();
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
-                        if (r.getDestinationIP().toString().compareTo(lowestIP.toString()) == -1) {
-                            lowestIP = r.getDestinationIP();
+                        if (r.getSourceIP().toString().compareTo(lowestIP.toString()) == -1) {
+                            lowestIP = r.getSourceIP();
                         }
                     }
                     display("Server found!");
@@ -240,7 +226,14 @@ class Client implements ChatProgramm {
     }
 
     public void displayConnectedClients() {
-        // TODO
+        display("Connected Nodes:");
+        for (ClientInfomartion clientInfomartion : connectedClients) {
+            if (!clientInfomartion.isServer() && clientInfomartion.getClientUsername() != username) {
+                display(clientInfomartion.getClientIP().getHostAddress() + ":" + clientInfomartion.getClientPort() + " | " + clientInfomartion.getClientUsername());
+            } else {
+                display(clientInfomartion.getClientIP().getHostAddress() + ":" + clientInfomartion.getClientPort() + " | " + "SERVER");
+            }
+        }
     }
 
     public void setUsername(String username) {
@@ -255,7 +248,7 @@ class Client implements ChatProgramm {
         this.serverip = serverip;
     }
 
-    public void setConnectedClients(ArrayList<ClientInfomartion> connectedClients) {
+    public void setConnectedClients(HashSet<ClientInfomartion> connectedClients) {
         this.connectedClients = connectedClients;
     }
 }

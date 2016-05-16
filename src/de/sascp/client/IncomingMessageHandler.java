@@ -21,6 +21,7 @@ class IncomingMessageHandler implements Runnable {
 
     public IncomingMessageHandler(Client parent) {
         this.parent = parent;
+        this.keepGoing = true;
     }
 
 
@@ -60,7 +61,7 @@ class IncomingMessageHandler implements Runnable {
                     break;
                 case (UPDATECLIENT):
                     updateClient updateClient = (updateClient) currentMessage;
-                    if (updateClient.getSourceIP().getHostAddress().equals(parent.getServerip())) {
+                    if (updateClient.getSourceIP().equals(parent.socket.getInetAddress())) {
                         parent.setConnectedClients(updateClient.getClientInfomartion());
                     }
                     break;

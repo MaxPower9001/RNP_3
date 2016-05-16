@@ -2,9 +2,13 @@ package de.sascp.server;
 
 
 import de.sascp.message.subTypes.reqFindServer;
+import de.sascp.message.subTypes.reqLogin;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.Charset;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
@@ -18,8 +22,8 @@ class ClientConnectionListener implements Runnable {
     // my unique id (easier for deconnection)
     final int id;
     private final Server parent;
-    InputStream sInput; //TODO ändern in InputStream
-    OutputStream sOutput; //TODO ändern in OutputStream
+    InputStream sInput;
+    OutputStream sOutput;
     // the Username of the Client
     String username;
     private boolean keepGoing = true;
@@ -34,8 +38,8 @@ class ClientConnectionListener implements Runnable {
         System.out.println("Thread trying to create Object Input/Output Streams");
         try {
             // create output first
-            sOutput = new ObjectOutputStream(socket.getOutputStream());
-            sInput = new ObjectInputStream(socket.getInputStream());
+            sOutput = socket.getOutputStream();
+            sInput = socket.getInputStream();
         } catch (IOException e) {
             parent.display("Exception creating new Input/output Streams: " + e);
             return;
@@ -61,9 +65,9 @@ class ClientConnectionListener implements Runnable {
                     break;
                 }
 
-                version = fromArray(headerBytes, 0); // Version number
-                messageType = fromArray(headerBytes, 4); // MessageType
-                length = fromArray(headerBytes, 8);  // Length
+                version = intFromFourBytes(headerBytes, HEADERVERSIONOFFSET, 4); // Version number
+                messageType = intFromFourBytes(headerBytes, HEADERTYPEOFFSET, 4); // MessageType
+                length = intFromFourBytes(headerBytes, HEADERLENGTHOFFSET, 4);  // Length
 
                 if (checkCommonHeader(version, messageType, length)) {
                     lookingForCommonHeader = false;
@@ -85,7 +89,26 @@ class ClientConnectionListener implements Runnable {
                             parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
                             break;
                         case (REQLOGIN):
-
+                            String username = new String(payload, Charset.forName(CHARSET));
+                            boolean usernameAlreadyTaken = false;
+                            for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
+                                if (ccl.username == username) {
+                                    usernameAlreadyTaken = true;
+                                }
+                                if (usernameAlreadyTaken) {
+                                    parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
+                                    parent.display("But his username was already taken - poor fella...");
+                                    break;
+                                }
+                            }
+                            if (!usernameAlreadyTaken) {
+                                this.username = username;
+                                if (parent.incomingMessageQueue.offer(new reqLogin(socket.getInetAddress(), username, socket.getPort()))) {
+                                    parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
+                                } else {
+                                    parent.display("I was not able to put reqLogin into incoming message queue - forigve me senpai!");
+                                }
+                            }
                             break;
                         default:
                             parent.display("This is Microsoft Sam the Servers default switch-bracket");

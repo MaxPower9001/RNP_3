@@ -4,7 +4,7 @@ import de.sascp.client.ClientInfomartion;
 import de.sascp.message.ChatMessage;
 
 import java.net.InetAddress;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.protocol.Specification.UPDATECLIENT;
@@ -13,15 +13,19 @@ import static de.sascp.protocol.Specification.UPDATECLIENT;
  * Created by Rene on 11.05.2016.
  */
 public class updateClient extends ChatMessage {
-    private ArrayList<ClientInfomartion> clientInfomartion = new ArrayList<>();
+    private HashSet<ClientInfomartion> clientInfomartion = new HashSet<>();
 
-    public updateClient(InetAddress destinationIP, int destinationPort, ArrayList<ClientInfomartion> clientInfomartion) {
+    public updateClient(InetAddress destinationIP, int destinationPort, HashSet<ClientInfomartion> clientInfomartion) {
         super(destinationIP, destinationPort, null, PORT, UPDATECLIENT, 0);
         this.clientInfomartion = clientInfomartion;
         this.setLength(clientInfomartion.size());
     }
 
-    public ArrayList<ClientInfomartion> getClientInfomartion() {
+    public HashSet<ClientInfomartion> getClientInfomartion() {
         return clientInfomartion;
+    }
+
+    public int getLength() {
+        return clientInfomartion.size();
     }
 }

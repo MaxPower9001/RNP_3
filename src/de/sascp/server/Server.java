@@ -4,6 +4,7 @@ package de.sascp.server;
  * Created by Rene on 10.05.2016.
  */
 
+import de.sascp.client.ClientInfomartion;
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
 
@@ -13,8 +14,10 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 import static de.sascp.protocol.Specification.PORT;
 
@@ -24,8 +27,8 @@ import static de.sascp.protocol.Specification.PORT;
 public class Server implements ChatProgramm, Runnable {
     // a unique ID for each connection
     static int uniqueId;
-    public final LinkedBlockingQueue<ChatMessage> incomingMessageQueue = new LinkedBlockingQueue<>();
-    // an ArrayList to keep the list of the Client
+    public final LinkedBlockingQueue<ChatMessage> incomingMessageQueue;
+    // A HashMap to keep the list of the Client
     private final HashMap<String, ClientConnectionListener> listenerHashMap;
     // if I am in a GUI
     private final ServerGUI serverGUI;
@@ -35,6 +38,7 @@ public class Server implements ChatProgramm, Runnable {
     private boolean keepGoing;
 
     private UDPServer udpServer;
+    private ServerUnit serverUnit;
 
 
     public Server(ServerGUI serverGUI) {
@@ -44,6 +48,7 @@ public class Server implements ChatProgramm, Runnable {
         simpleDateFormat = new SimpleDateFormat("HH:mm:ss");
         // ArrayList for the Client list
         listenerHashMap = new HashMap<>();
+        incomingMessageQueue = new LinkedBlockingQueue<>();
     }
 
     /*
@@ -71,31 +76,6 @@ public class Server implements ChatProgramm, Runnable {
             serverGUI.appendEvent(time + "\n");
     }
 
-    /*
-     *  to broadcast a message to all Clients
-     */
-    synchronized void broadcast(String message) {
-        // add HH:mm:ss and \n to the message
-        String time = simpleDateFormat.format(new Date());
-        String messageLf = time + " " + message + "\n";
-        // display message on console or GUI
-        if (serverGUI == null)
-            System.out.print(messageLf);
-        else
-            serverGUI.appendRoom(messageLf);     // append in the room window
-
-        // we loop in reverse order in case we would have to remove a Client
-        // because it has disconnected
-        for (int i = listenerHashMap.size(); --i >= 0; ) {
-            ClientConnectionListener ct = listenerHashMap.get(i);
-            // try to write to the Client if it fails remove it from the list
-            if (!ct.writeMsg(messageLf)) {
-                listenerHashMap.remove(i);
-                display("Disconnected Client " + ct.username + " removed from list.");
-            }
-        }
-    }
-
     // for a client who logoff using the LOGOUT message
     synchronized void remove(int id) {
         // scan the array list until we found the Id
@@ -113,6 +93,15 @@ public class Server implements ChatProgramm, Runnable {
         return listenerHashMap;
     }
 
+    public HashSet<ClientInfomartion> getConnectedClients() {
+        HashSet<ClientInfomartion> returnValue = listenerHashMap.values().stream().map(ccl -> new ClientInfomartion(
+                ccl.socket.getInetAddress(),
+                ccl.socket.getPort(),
+                ccl.username,
+                false)).collect(Collectors.toCollection(HashSet::new));
+        return returnValue;
+    }
+
     public SimpleDateFormat getSimpleDateFormat() {
         return simpleDateFormat;
     }
@@ -124,8 +113,9 @@ public class Server implements ChatProgramm, Runnable {
         try {
             // the socket used by the server
             udpServer = new UDPServer(this);
+            serverUnit = new ServerUnit(this);
             new Thread(udpServer).start();
-            new Thread(new ServerUnit(this)).start();
+            new Thread(serverUnit).start();
             ServerSocket serverSocket = new ServerSocket(PORT);
 
             // infinite loop to wait for connections
@@ -134,13 +124,14 @@ public class Server implements ChatProgramm, Runnable {
                 display("Server waiting for Clients on port " + PORT + ".");
 
                 Socket socket = serverSocket.accept();    // accept connection
+
+                display("Socket opened to: " + socket.getInetAddress());
                 // if I was asked to stop
                 if (!keepGoing)
                     break;
                 ClientConnectionListener t = new ClientConnectionListener(socket, this);  // make a thread of it
-                listenerHashMap.put(t.socket.getInetAddress().toString() + t.socket.getPort(), t);                                    // save it in the ArrayList
-                Thread thread = new Thread(t);
-                thread.start();
+                listenerHashMap.put(t.socket.getInetAddress().toString() + t.socket.getPort(), t);
+                new Thread(t).start();
             }
             // I was asked to stop
             try {

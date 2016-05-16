@@ -25,9 +25,14 @@ public class Utility {
         return broadcastIP;
     }
 
-    public static int fromArray(byte[] payload, int offset) {
-        ByteBuffer buffer = ByteBuffer.wrap(payload, offset, 4);
+    public static int intFromFourBytes(byte[] payload, int offset, int length) {
+        ByteBuffer buffer = ByteBuffer.wrap(payload, offset, length);
         return buffer.getInt();
+    }
+
+    public static int intFromTwoBytes(byte[] payload) {
+        // return unsigned Integer
+        return ((payload[1] & 0xFF) << 8) | payload[0] & 0xFF;
     }
 
     /**

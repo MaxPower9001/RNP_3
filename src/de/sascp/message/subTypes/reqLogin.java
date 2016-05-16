@@ -4,6 +4,7 @@ import de.sascp.message.ChatMessage;
 
 import java.net.InetAddress;
 
+import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.protocol.Specification.REQLOGIN;
 
 /**
@@ -12,8 +13,8 @@ import static de.sascp.protocol.Specification.REQLOGIN;
 public class reqLogin extends ChatMessage {
     private final String username;
 
-    public reqLogin(InetAddress destinationIP, String username) {
-        super(destinationIP, de.sascp.protocol.Specification.PORT, null, 0, REQLOGIN, username.length());
+    public reqLogin(InetAddress destinationIP, String username, int sourcePort) {
+        super(destinationIP, PORT, null, sourcePort, REQLOGIN, username.length());
         this.username = username;
     }
 

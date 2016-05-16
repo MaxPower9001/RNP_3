@@ -8,12 +8,11 @@ import static de.sascp.protocol.Specification.VERSION;
 public abstract class ChatMessage implements Serializable {
 
     private final InetAddress destinationIP;
-    private final InetAddress sourceIP;
     private final int destinationPort;
-    private final int sourcePort;
-
     private final int version;
     private final int messageType;
+    private InetAddress sourceIP;
+    private int sourcePort;
     private int length;
 
     // constructor
@@ -57,8 +56,16 @@ public abstract class ChatMessage implements Serializable {
         return sourceIP;
     }
 
+    public void setSourceIP(InetAddress sourceIP) {
+        this.sourceIP = sourceIP;
+    }
+
     public int getSourcePort() {
         return sourcePort;
+    }
+
+    public void setSourcePort(int sourcePort) {
+        this.sourcePort = sourcePort;
     }
 }
 

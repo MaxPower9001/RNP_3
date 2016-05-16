@@ -7,7 +7,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 
-import static de.sascp.protocol.Specification.PORT;
+import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
 
 public class UDPServer implements Runnable {
@@ -20,11 +20,11 @@ public class UDPServer implements Runnable {
 
     @Override
     public void run() {
-            try {
-                socket = new DatagramSocket(PORT);
-            } catch (SocketException e) {
-                e.printStackTrace();
-            }
+        try {
+            socket = new DatagramSocket(PORT);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
         boolean keepGoing = true;
         while (keepGoing) {
 
@@ -42,9 +42,9 @@ public class UDPServer implements Runnable {
 
                 byte[] headerBytes = packet.getData();
 
-                version = fromArray(headerBytes, 0); // Version number
-                messageType = fromArray(headerBytes, 4); // MessageType
-                length = fromArray(headerBytes, 8);  // Length
+                version = intFromFourBytes(headerBytes, HEADERVERSIONOFFSET, 4); // Version number
+                messageType = intFromFourBytes(headerBytes, HEADERTYPEOFFSET, 4); // MessageType
+                length = intFromFourBytes(headerBytes, HEADERLENGTHOFFSET, 4);  // Length
 
                 if (checkCommonHeader(version, messageType, length)) {
                     lookingForCommonHeader = false;

@@ -1,11 +1,9 @@
 package de.sascp.util;
 
 import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
+import de.sascp.client.ClientInfomartion;
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.reqFindServer;
-import de.sascp.message.subTypes.reqLogin;
-import de.sascp.message.subTypes.resFindServer;
-import de.sascp.message.subTypes.resHeartbeat;
+import de.sascp.message.subTypes.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,7 +24,6 @@ import static de.sascp.util.Utility.*;
  */
 public class MessageBuilder {
     /**
-     *
      * @param chatMessage
      * @param incomingMessageQueue
      * @return
@@ -60,12 +57,12 @@ public class MessageBuilder {
             if (incomingPacket.getData().length == CHLENGTH) {
                 byte[] headerBytes = incomingPacket.getData();
 
-                int version = fromArray(headerBytes, HEADERVERSIONOFFSET); // Version number
-                int messageType = fromArray(headerBytes, HEADERTYPEOFFSET); // MessageType
-                int length = fromArray(headerBytes, HEADERLENGTHOFFSET);  // Length
+                int version = intFromFourBytes(headerBytes, HEADERVERSIONOFFSET, 4); // Version number
+                int messageType = intFromFourBytes(headerBytes, HEADERTYPEOFFSET, 4); // MessageType
+                int length = intFromFourBytes(headerBytes, HEADERLENGTHOFFSET, 4);  // Length
 
                 if (checkCommonHeader(version, messageType, length)) {
-                    incomingMessageQueue.offer(new resFindServer(incomingPacket.getAddress(), incomingPacket.getPort()));
+                    incomingMessageQueue.offer(new resFindServer(toSocket.getLocalAddress(), toSocket.getLocalPort(), incomingPacket.getAddress(), incomingPacket.getPort()));
                 }
             }
         }
@@ -82,25 +79,6 @@ public class MessageBuilder {
             return false;
         }
         return true;
-    }
-
-    private static byte[] buildCommonHeader(ChatMessage chatMessage) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            outputStream.write(intToByteArray(VERSION));
-            outputStream.write(intToByteArray(chatMessage.getMessageType()));
-            outputStream.write(intToByteArray(chatMessage.getLength()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return outputStream.toByteArray();
-    }
-
-    private static byte[] intToByteArray(int intToTransform) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
-        byteBuffer.putInt(intToTransform);
-        return byteBuffer.array();
     }
 
     public static boolean buildMessage(resHeartbeat resHeartbeat, OutputStream outputStream) {
@@ -124,5 +102,63 @@ public class MessageBuilder {
         }
 
         return false;
+    }
+
+    public static boolean buildMessage(updateClient chatMessage, OutputStream outputStream) {
+        ByteOutputStream byteOutputStream = new ByteOutputStream();
+        byte[] commonHeader = buildCommonHeader(chatMessage);
+        byteOutputStream.write(commonHeader);
+        for (ClientInfomartion clientInfomartion : chatMessage.getClientInfomartion()) {
+            byte[] recordIP;
+            byte[] recordPort = new byte[2];
+            byte[] recordUsernameLength = new byte[1];
+            byte[] recordReserved = new byte[1];
+            byte[] recordUsername;
+
+            recordIP = clientInfomartion.getClientIP().getAddress();
+
+            recordPort[0] = (byte) (clientInfomartion.getClientPort() & 0x00FF);
+            recordPort[1] = (byte) ((clientInfomartion.getClientPort() >> 8) & 0x00FF);
+
+            recordUsernameLength[0] = (byte) (clientInfomartion.getClientUsername().length() & 0xFF);
+
+            recordReserved[0] = 0;
+
+            recordUsername = clientInfomartion.getClientUsername().getBytes();
+
+            byteOutputStream.write(recordIP);
+            byteOutputStream.write(recordPort);
+            byteOutputStream.write(recordUsernameLength);
+            byteOutputStream.write(recordReserved);
+            byteOutputStream.write(recordUsername);
+        }
+        byte[] outBytes = byteOutputStream.getBytes();
+
+        try {
+            outputStream.write(outBytes);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    private static byte[] buildCommonHeader(ChatMessage chatMessage) {
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        try {
+            outputStream.write(intToByteArray(VERSION));
+            outputStream.write(intToByteArray(chatMessage.getMessageType()));
+            outputStream.write(intToByteArray(chatMessage.getLength()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return outputStream.toByteArray();
+    }
+
+    private static byte[] intToByteArray(int intToTransform) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(4);
+        byteBuffer.putInt(intToTransform);
+        return byteBuffer.array();
     }
 }
