@@ -144,7 +144,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         if (connected) {
             // just have to send the message
             // TODO
-            // client.sendMessage();
+            client.sendMsg(tf.getText());
             tf.setText("");
             return;
         }

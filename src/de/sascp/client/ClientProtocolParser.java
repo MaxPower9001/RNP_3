@@ -1,11 +1,15 @@
 package de.sascp.client;
 
+import de.sascp.message.subTypes.sendMsgGrp;
+import de.sascp.message.subTypes.sendMsgUsr;
 import de.sascp.message.subTypes.updateClient;
+import de.sascp.util.Utility;
 
 import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.HashSet;
 
 import static de.sascp.protocol.Specification.*;
@@ -101,7 +105,7 @@ class ClientProtocolParser implements Runnable {
                         String username = new String(recordUsername);
 
                         // add new ClientInformation to list for updateClient Message
-                        clientList.add(new ClientInfomartion(ip, intFromTwoBytes(recordPort), username, parent.socket.getInetAddress() == ip));
+                        clientList.add(new ClientInfomartion(ip, intFromTwoBytes(recordPort,0), username, parent.socket.getInetAddress() == ip));
                     }
                     clientList.add(new ClientInfomartion(parent.socket.getInetAddress(), parent.socket.getPort(), "", true));
                     // after all the ClientInformation are added, create new updateClient Message and push to parent
@@ -131,6 +135,36 @@ class ClientProtocolParser implements Runnable {
                     switch (messageType) {
                         case (REQHEARTBEAT):
                             break;
+                        case (SENDMSGUSR):
+                            int usrTextMessageId = Utility.intFromFourBytes(payload,0,4);
+                            try {
+                                InetAddress sourceIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload,4,4));
+                                InetAddress targetIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload,8,4));
+                                int sourcePort = Utility.intFromTwoBytes(payload,12);
+                                int targetPort = Utility.intFromTwoBytes(payload,14);
+                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,payload.length - 16),Charset.forName(CHARSET));
+
+                                sendMsgUsr message = new sendMsgUsr(targetIp, targetPort, sourceIp, sourcePort,usrTextMessageId, usrTextMessage);
+                                parent.incomingMessageQueue.offer(message);
+                            } catch (UnknownHostException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        case (SENDMSGGRP):
+                            int grpTextMessageId = Utility.intFromFourBytes(payload,0,4);
+                            try {
+                                InetAddress sourceIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload,4,4));
+                                InetAddress targetIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload,8,4));
+                                int sourcePort = Utility.intFromTwoBytes(payload,12);
+                                int targetPort = Utility.intFromTwoBytes(payload,14);
+                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,payload.length - 16), Charset.forName(CHARSET));
+
+                                sendMsgGrp message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort,grpTextMessageId, usrTextMessage);
+                                parent.incomingMessageQueue.offer(message);
+                            } catch (UnknownHostException e) {
+                                e.printStackTrace();
+                            }
+                            break;
                         default:
                             parent.display("Nothing found - I guess nobody wants to talk to you...");
                             break;
@@ -138,6 +172,7 @@ class ClientProtocolParser implements Runnable {
                     }
                 }
                 lookingForPayload = false;
+                lookingForCommonHeader = true;
             }
         }
     }

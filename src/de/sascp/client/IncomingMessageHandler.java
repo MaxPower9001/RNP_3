@@ -1,9 +1,7 @@
 package de.sascp.client;
 
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.resFindServer;
-import de.sascp.message.subTypes.resHeartbeat;
-import de.sascp.message.subTypes.updateClient;
+import de.sascp.message.subTypes.*;
 import de.sascp.util.MessageBuilder;
 
 import java.io.OutputStream;
@@ -65,6 +63,30 @@ class IncomingMessageHandler implements Runnable {
                         parent.setConnectedClients(updateClient.getClientInfomartion());
                     }
                     break;
+                case (SENDMSGUSR): {
+                    sendMsgUsr curMess = (sendMsgUsr) currentMessage;
+                    String sourceUserName = "";
+                    for (ClientInfomartion client : parent.getConnectedClients()) {
+                        if(curMess.getSourceIP().equals(client.getClientIP()) && curMess.getSourcePort() == client.getClientPort()) {
+                            sourceUserName = client.getClientUsername();
+                            break;
+                        }
+                    }
+                    parent.display(sourceUserName + ": " + curMess.getMessage());
+                    break;
+                }
+                case (SENDMSGGRP): {
+                    sendMsgGrp curMess = (sendMsgGrp) currentMessage;
+                    String sourceUserName = "";
+                    for (ClientInfomartion client : parent.getConnectedClients()) {
+                        if(curMess.getSourceIP().equals(client.getClientIP()) && curMess.getSourcePort() == client.getClientPort()) {
+                            sourceUserName = client.getClientUsername();
+                            break;
+                        }
+                    }
+                    parent.display(sourceUserName + ": " + curMess.getMessage());
+                    break;
+                }
                 default:
                     parent.display("Nothing found - I guess nobody wants to talk to you...");
                     break;

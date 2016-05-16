@@ -1,11 +1,18 @@
 package de.sascp.server;
 
+import de.sascp.client.ClientInfomartion;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.resFindServer;
+import de.sascp.message.subTypes.sendMsgGrp;
+import de.sascp.message.subTypes.sendMsgUsr;
 import de.sascp.message.subTypes.updateClient;
+import de.sascp.util.MessageBuilder;
+import de.sascp.util.Utility;
 
-import static de.sascp.protocol.Specification.REQFINDSERVER;
-import static de.sascp.protocol.Specification.REQLOGIN;
+import java.io.OutputStream;
+import java.net.InetAddress;
+
+import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.MessageBuilder.buildMessage;
 
 /**
@@ -37,6 +44,28 @@ class ServerUnit implements Runnable {
                     for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
                         updateClient updateClient = new updateClient(ccl.socket.getInetAddress(), ccl.socket.getPort(), parent.getConnectedClients());
                         buildMessage(updateClient, ccl.sOutput);
+                    }
+                    break;
+                case (SENDMSGUSR):
+                    boolean targetStillInClientList = false;
+                    OutputStream targetOutputStream = null;
+                    for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
+                        if (clientConnection.socket.getInetAddress().equals(currentMessage.getDestinationIP()) &&
+                            clientConnection.socket.getPort() == (currentMessage.getDestinationPort())    ) {
+                            targetStillInClientList = true;
+                            targetOutputStream = clientConnection.sOutput;
+                            break;
+                        }
+                    }
+                    if (targetStillInClientList) { // target found, relay message to target
+                        buildMessage((sendMsgUsr) currentMessage, targetOutputStream);
+                    } else {
+                        // TODO handle error
+                    }
+                    break;
+                case (SENDMSGGRP):
+                    for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
+                        buildMessage((sendMsgGrp) currentMessage, clientConnection.sOutput);
                     }
                     break;
                 default:

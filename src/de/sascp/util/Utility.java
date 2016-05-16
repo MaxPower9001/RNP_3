@@ -3,6 +3,8 @@ package de.sascp.util;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.time.Instant;
+import java.util.Date;
 
 import static de.sascp.protocol.Specification.*;
 
@@ -30,9 +32,9 @@ public class Utility {
         return buffer.getInt();
     }
 
-    public static int intFromTwoBytes(byte[] payload) {
+    public static int intFromTwoBytes(byte[] payload, int offset) {
         // return unsigned Integer
-        return ((payload[1] & 0xFF) << 8) | payload[0] & 0xFF;
+        return ((payload[offset + 1] & 0xFF) << 8) | payload[offset] & 0xFF;
     }
 
     /**
@@ -49,5 +51,39 @@ public class Utility {
                 messageType < HIGHESTMESSAGETYPE &&
                 length >= 0;
 
+    }
+
+    public static byte[] concat(byte[] a, byte[] b) {
+        int aLen = a.length;
+        int bLen = b.length;
+        byte[] c= new byte[aLen+bLen];
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
+        return c;
+    }
+
+    public static int getMessageId() {
+        return (int) Instant.now().getEpochSecond();
+    }
+
+    public static byte[] intPortToByteArray(int port) {
+        byte[] hans = new byte[2];
+        hans[0] = (byte) (port & 0x00FF);
+        hans[1] = (byte) ((port >> 8) & 0x00FF);
+        return hans;
+    }
+
+    public static byte[] intToByteArray(int integer) {
+        return ByteBuffer.allocate(4).putInt(integer).array();
+    }
+
+    public static byte[] getByteArrayFragment(byte[] dataarray, int offset, int length) {
+        byte[] returnValue = new byte[length];
+        int counter = 0;
+        for(int i = offset ; i < offset+length; i++){
+            returnValue[counter] = dataarray[i];
+            counter++;
+        }
+        return returnValue;
     }
 }

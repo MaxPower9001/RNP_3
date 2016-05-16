@@ -2,11 +2,18 @@ package de.sascp.server;
 
 
 import de.sascp.message.subTypes.reqLogin;
+import de.sascp.message.subTypes.sendMsgGrp;
+import de.sascp.message.subTypes.sendMsgUsr;
+import de.sascp.util.Utility;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 import static de.sascp.protocol.Specification.*;
@@ -53,6 +60,8 @@ class ClientConnectionListener implements Runnable {
         int version;
         int messageType;
         int length;
+
+
 
         // to loop until LOGOUT
         while (keepGoing) {
@@ -104,6 +113,36 @@ class ClientConnectionListener implements Runnable {
                                 } else {
                                     parent.display("I was not able to put reqLogin into incoming message queue - forigve me senpai!");
                                 }
+                            }
+                            break;
+                        case (SENDMSGUSR):
+                            int usrTextMessageId = Utility.intFromFourBytes(payload,0,4);
+                            try {
+                                InetAddress sourceIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload,4,4));
+                                InetAddress targetIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload,8,4));
+                                int sourcePort = Utility.intFromTwoBytes(payload,12);
+                                int targetPort = Utility.intFromTwoBytes(payload,14);
+                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,4),Charset.forName(CHARSET));
+
+                                sendMsgUsr message = new sendMsgUsr(targetIp, targetPort, sourceIp, sourcePort,usrTextMessageId, usrTextMessage);
+                                parent.incomingMessageQueue.offer(message);
+                            } catch (UnknownHostException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        case (SENDMSGGRP):
+                            int grpTextMessageId = Utility.intFromFourBytes(payload,0,4);
+                            try {
+                                InetAddress sourceIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload,4,4));
+                                InetAddress targetIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload,8,4));
+                                int sourcePort = Utility.intFromTwoBytes(payload,12);
+                                int targetPort = Utility.intFromTwoBytes(payload,14);
+                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,4),Charset.forName(CHARSET));
+
+                                sendMsgGrp message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort,grpTextMessageId, usrTextMessage);
+                                parent.incomingMessageQueue.offer(message);
+                            } catch (UnknownHostException e) {
+                                e.printStackTrace();
                             }
                             break;
                         default:

@@ -2,10 +2,7 @@ package de.sascp.client;
 
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.reqFindServer;
-import de.sascp.message.subTypes.reqLogin;
-import de.sascp.message.subTypes.resFindServer;
-import de.sascp.message.subTypes.resHeartbeat;
+import de.sascp.message.subTypes.*;
 import de.sascp.server.Server;
 import de.sascp.util.MessageBuilder;
 import de.sascp.util.Utility;
@@ -16,9 +13,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.HashSet;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -44,6 +39,7 @@ class Client implements ChatProgramm {
     Socket socket;
     InputStream sInput;
     OutputStream sOutput;
+
 
     // List of all connected Clients in the current session
     private HashSet<ClientInfomartion> connectedClients;
@@ -135,6 +131,32 @@ class Client implements ChatProgramm {
                 }
             }
         }, TIMEOUT);
+    }
+    // /w hans tolle nachricht
+    void sendMsg(String message) {
+        if(message.startsWith("/w")) {
+            String target = message.split(" ")[1];
+            ArrayList<String> messageText = new ArrayList<String>(Arrays.asList(message.split(" ")));
+            messageText.remove(0);
+            messageText.remove(0);
+            String actualMessage = "";
+
+            for (String s : messageText)
+            {
+                actualMessage += s + " ";
+            }
+            for (ClientInfomartion client : connectedClients) {
+                if (client.getClientUsername().equals(target)) {
+                    InetAddress targetIP = client.getClientIP();
+                    int targetPort = client.getClientPort();
+                    MessageBuilder.buildMessage(new sendMsgUsr(targetIP, targetPort,socket.getLocalAddress(),socket.getLocalPort(),Utility.getMessageId(),actualMessage),sOutput);
+                    break;
+                }
+            }
+        }
+        else {
+            MessageBuilder.buildMessage(new sendMsgGrp(Utility.getBroadcastIP(), 0,socket.getLocalAddress(),socket.getLocalPort(),Utility.getMessageId(),message),sOutput);
+        }
     }
 
     private boolean findOwnUsername() {
@@ -253,6 +275,10 @@ class Client implements ChatProgramm {
 
     public void setConnectedClients(HashSet<ClientInfomartion> connectedClients) {
         this.connectedClients = connectedClients;
+    }
+
+    public HashSet<ClientInfomartion> getConnectedClients() {
+        return connectedClients;
     }
 }
 

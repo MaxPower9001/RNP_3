@@ -80,6 +80,54 @@ public class MessageBuilder {
         return true;
     }
 
+    public static boolean buildMessage(sendMsgUsr sendMsgUsr, OutputStream outputStream) {
+        byte[] usrTextMessage = sendMsgUsr.getMessage().getBytes();
+        byte[] usrTextMessageId = Utility.intToByteArray(sendMsgUsr.getMessageId());
+        byte[] sourceIp = sendMsgUsr.getSourceIP().getAddress();
+        byte[] targetIp = sendMsgUsr.getDestinationIP().getAddress();
+        byte[] sourcePort = intPortToByteArray(sendMsgUsr.getSourcePort());
+        byte[] targetPort = intPortToByteArray(sendMsgUsr.getDestinationPort());
+
+        byte[] messageToBeSent = buildCommonHeader(sendMsgUsr);
+        messageToBeSent = concat(messageToBeSent,usrTextMessageId);
+        messageToBeSent = concat(messageToBeSent,sourceIp);
+        messageToBeSent = concat(messageToBeSent,targetIp);
+        messageToBeSent = concat(messageToBeSent,sourcePort);
+        messageToBeSent = concat(messageToBeSent,targetPort);
+        messageToBeSent = concat(messageToBeSent,usrTextMessage);
+
+        try {
+            outputStream.write(messageToBeSent);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    public static boolean buildMessage(sendMsgGrp sendMsgGrp, OutputStream outputStream) {
+        byte[] usrTextMessage = sendMsgGrp.getMessage().getBytes();
+        byte[] usrTextMessageId = Utility.intToByteArray(sendMsgGrp.getMessageId());
+        byte[] sourceIp = sendMsgGrp.getSourceIP().getAddress();
+        byte[] targetIp = sendMsgGrp.getDestinationIP().getAddress();
+        byte[] sourcePort = intPortToByteArray(sendMsgGrp.getSourcePort());
+        byte[] targetPort = intPortToByteArray(sendMsgGrp.getDestinationPort());
+
+        byte[] messageToBeSent = buildCommonHeader(sendMsgGrp);
+        messageToBeSent = concat(messageToBeSent,usrTextMessageId);
+        messageToBeSent = concat(messageToBeSent,sourceIp);
+        messageToBeSent = concat(messageToBeSent,targetIp);
+        messageToBeSent = concat(messageToBeSent,sourcePort);
+        messageToBeSent = concat(messageToBeSent,targetPort);
+        messageToBeSent = concat(messageToBeSent,usrTextMessage);
+
+        try {
+            outputStream.write(messageToBeSent);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
     public static boolean buildMessage(resHeartbeat resHeartbeat, OutputStream outputStream) {
         return false;
     }
@@ -104,9 +152,7 @@ public class MessageBuilder {
     }
 
     public static boolean buildMessage(updateClient chatMessage, OutputStream outputStream) {
-        ByteOutputStream byteOutputStream = new ByteOutputStream();
-        byte[] commonHeader = buildCommonHeader(chatMessage);
-        byteOutputStream.write(commonHeader);
+        byte[] messageToBeSent = concat(new byte[0],buildCommonHeader(chatMessage));
         for (ClientInfomartion clientInfomartion : chatMessage.getClientInfomartion()) {
             byte[] recordIP;
             byte[] recordPort = new byte[2];
@@ -116,8 +162,7 @@ public class MessageBuilder {
 
             recordIP = clientInfomartion.getClientIP().getAddress();
 
-            recordPort[0] = (byte) (clientInfomartion.getClientPort() & 0x00FF);
-            recordPort[1] = (byte) ((clientInfomartion.getClientPort() >> 8) & 0x00FF);
+            recordPort = intPortToByteArray(clientInfomartion.getClientPort());
 
             recordUsernameLength[0] = (byte) (clientInfomartion.getClientUsername().length() & 0xFF);
 
@@ -125,16 +170,15 @@ public class MessageBuilder {
 
             recordUsername = clientInfomartion.getClientUsername().getBytes();
 
-            byteOutputStream.write(recordIP);
-            byteOutputStream.write(recordPort);
-            byteOutputStream.write(recordUsernameLength);
-            byteOutputStream.write(recordReserved);
-            byteOutputStream.write(recordUsername);
+            messageToBeSent = concat(messageToBeSent,recordIP);
+            messageToBeSent = concat(messageToBeSent,recordPort);
+            messageToBeSent = concat(messageToBeSent,recordUsernameLength);
+            messageToBeSent = concat(messageToBeSent,recordReserved);
+            messageToBeSent = concat(messageToBeSent,recordUsername);
         }
-        byte[] outBytes = byteOutputStream.getBytes();
 
         try {
-            outputStream.write(outBytes);
+            outputStream.write(messageToBeSent);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -143,16 +187,10 @@ public class MessageBuilder {
     }
 
     private static byte[] buildCommonHeader(ChatMessage chatMessage) {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        try {
-            outputStream.write(intToByteArray(VERSION));
-            outputStream.write(intToByteArray(chatMessage.getMessageType()));
-            outputStream.write(intToByteArray(chatMessage.getLength()));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return outputStream.toByteArray();
+        byte[] header = intToByteArray(VERSION);
+        header = concat(header,intToByteArray(chatMessage.getMessageType()));
+        header = concat(header,intToByteArray(chatMessage.getLength()));
+        return header;
     }
 
     private static byte[] intToByteArray(int intToTransform) {
