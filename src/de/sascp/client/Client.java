@@ -80,26 +80,28 @@ class Client implements ChatProgramm {
      * <p>- reqLogin function returns with false</p>
      */
     boolean start() {
-        // establishing socket to server for TCP communication
-        try {
-            socket = new Socket(serverip, PORT);
-        } catch (Exception ec) {
-            display("Error connectiong to serverip:" + ec);
-            return false;
-        }
+        if (socket == null) {
+            // establishing socket to server for TCP communication
+            try {
+                socket = new Socket(serverip, PORT);
+            } catch (Exception ec) {
+                display("Error connectiong to serverip:" + ec);
+                return false;
+            }
 
 		/* Creating both Data Streams */
-        try {
-            sInput = socket.getInputStream();
-            sOutput = socket.getOutputStream();
-        } catch (IOException eIO) {
-            display("Exception creating new Input/output Streams: " + eIO);
-            return false;
-        }
+            try {
+                sInput = socket.getInputStream();
+                sOutput = socket.getOutputStream();
+            } catch (IOException eIO) {
+                display("Exception creating new Input/output Streams: " + eIO);
+                return false;
+            }
 
-        // Create and start Threads for IMH and PP
-        new Thread(clientProtocolParser).start();
-        new Thread(incomingMessageHandler).start();
+            // Create and start Threads for IMH and PP
+            new Thread(clientProtocolParser).start();
+            new Thread(incomingMessageHandler).start();
+        }
         /*
          Send Login Message according to Protocol specification
          If failed, close socket and return false
@@ -127,6 +129,7 @@ class Client implements ChatProgramm {
             public void run() {
                 if (connectedClients.isEmpty() || !findOwnUsername()) {
                     display("Bad Login - maybe try another Username");
+                    clientGUI.connectionFailed();
                 } else {
                     display("Logged in - you did it!");
                 }
@@ -204,7 +207,7 @@ class Client implements ChatProgramm {
                     server.showGUI();
                     display("Server started");
                     clientGUI.setServerTextField("127.0.0.1");
-                    clientGUI.disableFindServerButton();
+                    clientGUI.enableFindServerButton(false);
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {

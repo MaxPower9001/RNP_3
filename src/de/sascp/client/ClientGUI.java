@@ -161,12 +161,6 @@ public class ClientGUI extends JFrame implements ActionListener {
                 append("The length of your username does not fit into protocol specification.");
                 return;
             }
-            // empty serverAddress ignore it
-            // You are not supposed to input Server IP by hand
-//            String server = tfServer.getText().trim();
-//            if (server.length() == 0)
-//                return;
-//            client.setServerip(server);
             client.setUsername(username);
             // test if we can start the Client
             if (!client.start())
@@ -193,8 +187,17 @@ public class ClientGUI extends JFrame implements ActionListener {
         tfServer.setText(serverIP);
     }
 
-    public void disableFindServerButton() {
-        findServer.setEnabled(false);
+    public void enableFindServerButton(boolean enabled) {
+        findServer.setEnabled(enabled);
+    }
+
+    public void enableLoginButton(boolean b) {
+        login.setEnabled(b);
+
+    }
+
+    public void setMessageLabel(String string) {
+        label.setText(string);
     }
 }
 

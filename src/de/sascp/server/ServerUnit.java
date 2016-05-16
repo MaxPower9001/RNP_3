@@ -1,7 +1,6 @@
 package de.sascp.server;
 
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.reqLogin;
 import de.sascp.message.subTypes.resFindServer;
 import de.sascp.message.subTypes.updateClient;
 
@@ -35,13 +34,9 @@ class ServerUnit implements Runnable {
                     answerRequestFindServer(currentMessage);
                     break;
                 case (REQLOGIN):
-                    if (parent.getListenerHashMap().keySet().contains(((reqLogin) currentMessage).getUsername())) {
-                        break;
-                    } else {
-                        for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
-                            updateClient updateClient = new updateClient(ccl.socket.getInetAddress(), ccl.socket.getPort(), parent.getConnectedClients());
-                            buildMessage(updateClient, ccl.sOutput);
-                        }
+                    for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
+                        updateClient updateClient = new updateClient(ccl.socket.getInetAddress(), ccl.socket.getPort(), parent.getConnectedClients());
+                        buildMessage(updateClient, ccl.sOutput);
                     }
                     break;
                 default:

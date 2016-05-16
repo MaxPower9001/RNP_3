@@ -1,6 +1,5 @@
 package de.sascp.client;
 
-import de.sascp.message.subTypes.resFindServer;
 import de.sascp.message.subTypes.updateClient;
 
 import java.io.IOException;
@@ -130,10 +129,6 @@ class ClientProtocolParser implements Runnable {
                     }
                     // according to message type put message into incomingMessageQueue for IMH
                     switch (messageType) {
-                        case (RESFINDSERVER):
-                            resFindServer resFindServer = new resFindServer(parent.socket.getLocalAddress(), parent.socket.getLocalPort(), parent.socket.getInetAddress(), parent.socket.getPort());
-                            parent.incomingMessageQueue.offer(resFindServer);
-                            break;
                         case (REQHEARTBEAT):
                             break;
                         default:

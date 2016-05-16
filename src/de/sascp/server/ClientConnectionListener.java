@@ -1,7 +1,6 @@
 package de.sascp.server;
 
 
-import de.sascp.message.subTypes.reqFindServer;
 import de.sascp.message.subTypes.reqLogin;
 
 import java.io.IOException;
@@ -25,7 +24,7 @@ class ClientConnectionListener implements Runnable {
     InputStream sInput;
     OutputStream sOutput;
     // the Username of the Client
-    String username;
+    String username = "";
     private boolean keepGoing = true;
 
     // Constructore
@@ -48,14 +47,21 @@ class ClientConnectionListener implements Runnable {
 
     // what will run forever
     public void run() {
-        boolean lookingForCommonHeader = true;
-        boolean lookingForPayload = true;
-        int version = -1;
-        int messageType = -1;
-        int length = -1;
+        boolean lookingForCommonHeader;
+        boolean lookingForPayload;
+
+        int version;
+        int messageType;
+        int length;
 
         // to loop until LOGOUT
         while (keepGoing) {
+            lookingForCommonHeader = true;
+            lookingForPayload = true;
+
+            messageType = -1;
+            length = -1;
+
             while (lookingForCommonHeader) {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
@@ -85,24 +91,14 @@ class ClientConnectionListener implements Runnable {
                         break;
                     }
                     switch (messageType) {
-                        case (REQFINDSERVER):
-                            parent.incomingMessageQueue.offer(new reqFindServer(socket.getInetAddress(), socket.getPort()));
-                            break;
                         case (REQLOGIN):
-                            String username = new String(payload, Charset.forName(CHARSET));
-                            boolean usernameAlreadyTaken = false;
-                            for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
-                                if (ccl.username == username) {
-                                    usernameAlreadyTaken = true;
-                                }
-                                if (usernameAlreadyTaken) {
-                                    parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
-                                    parent.display("But his username was already taken - poor fella...");
-                                    break;
-                                }
-                            }
-                            if (!usernameAlreadyTaken) {
-                                this.username = username;
+                            this.username = new String(payload, Charset.forName(CHARSET));
+                            if (username.length() == 0 || parent.getListenerHashMap().containsKey(username)) {
+//                                keepGoing = false;
+                                parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
+                                parent.display("But his username was already taken - poor fella...");
+                            } else {
+                                parent.getListenerHashMap().put(username, this);
                                 if (parent.incomingMessageQueue.offer(new reqLogin(socket.getInetAddress(), username, socket.getPort()))) {
                                     parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
                                 } else {
@@ -118,10 +114,6 @@ class ClientConnectionListener implements Runnable {
                 lookingForPayload = false;
             }
         }
-        // remove myself from the arrayList containing the list of the
-        // connected Clients
-        parent.remove(id);
-        close();
     }
 
     // try to close everything

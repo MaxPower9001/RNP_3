@@ -11,7 +11,7 @@ import static de.sascp.protocol.Specification.*;
  */
 public class Utility {
     public static final int CHLENGTH = 12;
-    private static final String BROADCASTIP = "192.168.178.255";
+    private static final String BROADCASTIP = "255.255.255.255";
     private static InetAddress broadcastIP;
 
     public static InetAddress getBroadcastIP() {

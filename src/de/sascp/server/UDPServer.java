@@ -3,9 +3,7 @@ package de.sascp.server;
 import de.sascp.message.subTypes.reqFindServer;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
+import java.net.*;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
@@ -21,7 +19,11 @@ public class UDPServer implements Runnable {
     @Override
     public void run() {
         try {
-            socket = new DatagramSocket(PORT);
+            try {
+                socket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
         } catch (SocketException e) {
             e.printStackTrace();
         }
@@ -50,7 +52,13 @@ public class UDPServer implements Runnable {
                     lookingForCommonHeader = false;
                 }
             }
-            parent.incomingMessageQueue.offer(new reqFindServer(packet.getAddress(), packet.getPort()));
+
+            if (parent.incomingMessageQueue.offer(new reqFindServer(((InetSocketAddress) packet.getSocketAddress()).getAddress(), (((InetSocketAddress) packet.getSocketAddress())
+                    .getPort())))) {
+                parent.display("reqFindServer received and added to incoming Message Queue");
+            } else {
+                parent.display("reqFindServer received and thrown away!");
+            }
         }
     }
 

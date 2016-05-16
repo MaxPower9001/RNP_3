@@ -8,10 +8,7 @@ import de.sascp.message.subTypes.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -62,7 +59,9 @@ public class MessageBuilder {
                 int length = intFromFourBytes(headerBytes, HEADERLENGTHOFFSET, 4);  // Length
 
                 if (checkCommonHeader(version, messageType, length)) {
-                    incomingMessageQueue.offer(new resFindServer(toSocket.getLocalAddress(), toSocket.getLocalPort(), incomingPacket.getAddress(), incomingPacket.getPort()));
+                    incomingMessageQueue.offer(new resFindServer(toSocket.getLocalAddress(), toSocket.getLocalPort(), ((InetSocketAddress) incomingPacket.getSocketAddress()).getAddress(), ((
+                            (InetSocketAddress) incomingPacket.getSocketAddress())
+                            .getPort())));
                 }
             }
         }
@@ -70,9 +69,9 @@ public class MessageBuilder {
         return true;
     }
 
-    public static boolean buildMessage(resFindServer chatMessage, DatagramSocket toSocket) {
-        byte[] outgoingMessage = buildCommonHeader(chatMessage);
-        DatagramPacket packet = new DatagramPacket(outgoingMessage, outgoingMessage.length, chatMessage.getDestinationIP(), chatMessage.getDestinationPort());
+    public static boolean buildMessage(resFindServer resFindServer, DatagramSocket toSocket) {
+        byte[] outgoingMessage = buildCommonHeader(resFindServer);
+        DatagramPacket packet = new DatagramPacket(outgoingMessage, outgoingMessage.length, resFindServer.getDestinationIP(), resFindServer.getDestinationPort());
         try {
             toSocket.send(packet);
         } catch (IOException e) {
@@ -90,13 +89,13 @@ public class MessageBuilder {
 
         byte[] username = chatMessage.getUsername().getBytes(Charset.forName(CHARSET));
 
-        ByteOutputStream byteOutputStream = new ByteOutputStream();
+        byte[] combined = new byte[outgoingMessage.length + username.length];
 
-        byteOutputStream.write(outgoingMessage);
-        byteOutputStream.write(username);
+        System.arraycopy(outgoingMessage, 0, combined, 0, outgoingMessage.length);
+        System.arraycopy(username, 0, combined, outgoingMessage.length, username.length);
 
         try {
-            outputStream.write(byteOutputStream.getBytes());
+            outputStream.write(combined);
         } catch (IOException e) {
             e.printStackTrace();
         }

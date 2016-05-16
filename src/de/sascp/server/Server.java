@@ -77,15 +77,9 @@ public class Server implements ChatProgramm, Runnable {
     }
 
     // for a client who logoff using the LOGOUT message
-    synchronized void remove(int id) {
-        // scan the array list until we found the Id
-        for (int i = 0; i < listenerHashMap.size(); ++i) {
-            ClientConnectionListener ct = listenerHashMap.get(i);
-            // found it
-            if (ct.id == id) {
-                listenerHashMap.remove(i);
-                return;
-            }
+    synchronized void remove(ClientConnectionListener ccl) {
+        if (listenerHashMap.containsValue(ccl)) {
+            listenerHashMap.remove(ccl);
         }
     }
 
@@ -130,7 +124,7 @@ public class Server implements ChatProgramm, Runnable {
                 if (!keepGoing)
                     break;
                 ClientConnectionListener t = new ClientConnectionListener(socket, this);  // make a thread of it
-                listenerHashMap.put(t.socket.getInetAddress().toString() + t.socket.getPort(), t);
+
                 new Thread(t).start();
             }
             // I was asked to stop
