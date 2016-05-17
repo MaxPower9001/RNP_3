@@ -122,7 +122,7 @@ class ClientConnectionListener implements Runnable {
                                 InetAddress targetIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload,8,4));
                                 int sourcePort = Utility.intFromTwoBytes(payload,12);
                                 int targetPort = Utility.intFromTwoBytes(payload,14);
-                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,4),Charset.forName(CHARSET));
+                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,length - 16),Charset.forName(CHARSET));
 
                                 sendMsgUsr message = new sendMsgUsr(targetIp, targetPort, sourceIp, sourcePort,usrTextMessageId, usrTextMessage);
                                 parent.incomingMessageQueue.offer(message);
@@ -137,7 +137,7 @@ class ClientConnectionListener implements Runnable {
                                 InetAddress targetIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload,8,4));
                                 int sourcePort = Utility.intFromTwoBytes(payload,12);
                                 int targetPort = Utility.intFromTwoBytes(payload,14);
-                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,4),Charset.forName(CHARSET));
+                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,length - 16),Charset.forName(CHARSET));
 
                                 sendMsgGrp message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort,grpTextMessageId, usrTextMessage);
                                 parent.incomingMessageQueue.offer(message);

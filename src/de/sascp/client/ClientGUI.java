@@ -199,6 +199,10 @@ public class ClientGUI extends JFrame implements ActionListener {
     public void setMessageLabel(String string) {
         label.setText(string);
     }
+
+    public void clearText(){
+        ta.setText("");
+    }
 }
 
 

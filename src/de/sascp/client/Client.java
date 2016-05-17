@@ -128,6 +128,7 @@ class Client implements ChatProgramm {
                     clientGUI.connectionFailed();
                 } else {
                     display("Logged in - you did it!");
+                    clientGUI.clearText();
                 }
             }
         }, TIMEOUT);
