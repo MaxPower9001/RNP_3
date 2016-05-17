@@ -1,16 +1,12 @@
 package de.sascp.server;
 
-import de.sascp.client.ClientInfomartion;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.resFindServer;
 import de.sascp.message.subTypes.sendMsgGrp;
 import de.sascp.message.subTypes.sendMsgUsr;
 import de.sascp.message.subTypes.updateClient;
-import de.sascp.util.MessageBuilder;
-import de.sascp.util.Utility;
 
 import java.io.OutputStream;
-import java.net.InetAddress;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.MessageBuilder.buildMessage;
@@ -54,7 +50,6 @@ class ServerUnit implements Runnable {
                             clientConnection.socket.getPort() == (currentMessage.getDestinationPort())    ) {
                             targetStillInClientList = true;
                             targetOutputStream = clientConnection.sOutput;
-                            break;
                         }
                     }
                     if (targetStillInClientList) { // target found, relay message to target
@@ -65,7 +60,8 @@ class ServerUnit implements Runnable {
                     break;
                 case (SENDMSGGRP):
                     for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                        buildMessage((sendMsgGrp) currentMessage, clientConnection.sOutput);
+                        sendMsgGrp messageToBeSent = (sendMsgGrp) currentMessage;
+                        buildMessage(messageToBeSent, clientConnection.sOutput);
                     }
                     break;
                 default:

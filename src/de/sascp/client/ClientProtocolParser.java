@@ -1,5 +1,6 @@
 package de.sascp.client;
 
+import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.sendMsgGrp;
 import de.sascp.message.subTypes.sendMsgUsr;
 import de.sascp.message.subTypes.updateClient;
@@ -157,9 +158,11 @@ class ClientProtocolParser implements Runnable {
                                 InetAddress targetIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload,8,4));
                                 int sourcePort = Utility.intFromTwoBytes(payload,12);
                                 int targetPort = Utility.intFromTwoBytes(payload,14);
-                                String usrTextMessage = new String(Utility.getByteArrayFragment(payload,16,payload.length - 16), Charset.forName(CHARSET));
+                                byte[] msgText = Utility.getByteArrayFragment(payload, 16, payload.length - 16);
+                                String usrTextMessage = new String(msgText, Charset.forName(CHARSET));
 
-                                sendMsgGrp message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort,grpTextMessageId, usrTextMessage);
+                                ChatMessage message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort, grpTextMessageId, usrTextMessage);
+                                message.setPayload(msgText);
                                 parent.incomingMessageQueue.offer(message);
                             } catch (UnknownHostException e) {
                                 e.printStackTrace();

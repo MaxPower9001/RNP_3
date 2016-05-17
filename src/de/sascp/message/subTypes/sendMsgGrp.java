@@ -26,4 +26,5 @@ public class sendMsgGrp extends ChatMessage {
     public int getMessageId() {
         return messageId;
     }
+
 }

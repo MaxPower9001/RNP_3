@@ -14,6 +14,7 @@ public abstract class ChatMessage implements Serializable {
     private InetAddress sourceIP;
     private int sourcePort;
     private int length;
+    private byte[] payload;
 
     // constructor
     protected ChatMessage(InetAddress destinationIP, int destinationPort, InetAddress sourceIP, int sourcePort, int messageType, int length) {
@@ -40,7 +41,7 @@ public abstract class ChatMessage implements Serializable {
         return length;
     }
 
-    protected void setLength(int length) {
+    public void setLength(int length) {
         this.length = length;
     }
 
@@ -66,6 +67,15 @@ public abstract class ChatMessage implements Serializable {
 
     public void setSourcePort(int sourcePort) {
         this.sourcePort = sourcePort;
+    }
+
+    public byte[] getPayload() {
+        return payload;
+    }
+
+    public void setPayload(byte[] payload) {
+        this.payload = payload;
+        this.length = length + payload.length;
     }
 }
 

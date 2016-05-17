@@ -11,7 +11,7 @@ public class Specification {
     public static final int HEADERLENGTHOFFSET = 8;
 
     // Timeout
-    public static final int TIMEOUT = 2000;
+    public static final int TIMEOUT = 10000;
     // Current Protocol Version
     public static final int VERSION = 1;
     // Port Number
