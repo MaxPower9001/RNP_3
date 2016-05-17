@@ -9,13 +9,13 @@ import java.net.InetAddress;
  * Client's Username
  * Every Client and Server holds a List of these to store Information about every connected Client.
  */
-public class ClientInfomartion {
+public class ClientInformation {
     private final InetAddress clientIP;
     private final int clientPort;
     private final String clientUsername;
     private final boolean isServer;
 
-    public ClientInfomartion(InetAddress clientIP, int clientPort, String clientUsername, boolean isServer) {
+    public ClientInformation(InetAddress clientIP, int clientPort, String clientUsername, boolean isServer) {
         this.clientIP = clientIP;
         this.clientPort = clientPort;
         this.clientUsername = clientUsername;
@@ -43,7 +43,7 @@ public class ClientInfomartion {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ClientInfomartion that = (ClientInfomartion) o;
+        ClientInformation that = (ClientInformation) o;
 
         if (clientPort != that.clientPort) return false;
         if (isServer != that.isServer) return false;

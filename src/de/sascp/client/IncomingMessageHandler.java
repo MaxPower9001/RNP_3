@@ -1,11 +1,10 @@
 package de.sascp.client;
 
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.*;
-import de.sascp.util.MessageBuilder;
-
-import java.io.OutputStream;
-import java.net.InetAddress;
+import de.sascp.message.subTypes.resFindServer;
+import de.sascp.message.subTypes.sendMsgGrp;
+import de.sascp.message.subTypes.sendMsgUsr;
+import de.sascp.message.subTypes.updateClient;
 
 import static de.sascp.protocol.Specification.*;
 
@@ -22,24 +21,6 @@ class IncomingMessageHandler implements Runnable {
         this.keepGoing = true;
     }
 
-
-    public static void handleIncomingMessage(ChatMessage chatMessage) {
-
-        // TODO
-
-    }
-
-    /**
-     * Directly answers Heartbeat Package with the given OutputStream
-     *
-     * @param outputStream - OutputStream needed to send the Message
-     * @return returns true, if message send successfully. returns false,
-     * if IOException thrown
-     */
-    private boolean answerHeartbeat(InetAddress targetIP, int targetPort, OutputStream outputStream) {
-        return MessageBuilder.buildMessage(new resHeartbeat(targetIP, targetPort), outputStream);
-    }
-
     @Override
     public void run() {
         while (keepGoing) {
@@ -51,22 +32,19 @@ class IncomingMessageHandler implements Runnable {
             }
             assert currentMessage != null;
             switch (currentMessage.getMessageType()) {
-                case (REQHEARTBEAT):
-                    answerHeartbeat(parent.socket.getInetAddress(), parent.socket.getPort(), parent.sOutput);
-                    break;
                 case (RESFINDSERVER):
                     parent.incomingResFindServer.offer((resFindServer) currentMessage);
                     break;
                 case (UPDATECLIENT):
                     updateClient updateClient = (updateClient) currentMessage;
                     if (updateClient.getSourceIP().equals(parent.socket.getInetAddress())) {
-                        parent.setConnectedClients(updateClient.getClientInfomartion());
+                        parent.setConnectedClients(updateClient.getClientInformation());
                     }
                     break;
                 case (SENDMSGUSR): {
                     sendMsgUsr curMess = (sendMsgUsr) currentMessage;
                     String sourceUserName = "";
-                    for (ClientInfomartion client : parent.getConnectedClients()) {
+                    for (ClientInformation client : parent.getConnectedClients()) {
                         if(curMess.getSourceIP().equals(client.getClientIP()) && curMess.getSourcePort() == client.getClientPort()) {
                             sourceUserName = client.getClientUsername();
                             break;
@@ -78,7 +56,7 @@ class IncomingMessageHandler implements Runnable {
                 case (SENDMSGGRP): {
                     sendMsgGrp curMess = (sendMsgGrp) currentMessage;
                     String sourceUserName = "";
-                    for (ClientInfomartion client : parent.getConnectedClients()) {
+                    for (ClientInformation client : parent.getConnectedClients()) {
                         if(curMess.getSourceIP().equals(client.getClientIP()) && curMess.getSourcePort() == client.getClientPort()) {
                             sourceUserName = client.getClientUsername();
                             break;

@@ -1,20 +1,20 @@
 package de.sascp.server;
 
 
+import de.sascp.message.subTypes.reqHeartbeat;
 import de.sascp.message.subTypes.reqLogin;
 import de.sascp.message.subTypes.sendMsgGrp;
 import de.sascp.message.subTypes.sendMsgUsr;
+import de.sascp.util.MessageBuilder;
 import de.sascp.util.Utility;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
+import java.net.*;
 import java.nio.charset.Charset;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.*;
@@ -32,10 +32,21 @@ class ClientConnectionListener implements Runnable {
     OutputStream sOutput;
     // the Username of the Client
     String username = "";
+    Timer sendHB;
+    Timer checkHB;
     private boolean keepGoing = true;
+    private boolean[] hbReceived = {false};
+
+
 
     // Constructore
     ClientConnectionListener(Socket socket, Server parent) {
+        InetAddress targetIP = socket.getInetAddress();
+        InetAddress sourceIP = socket.getLocalAddress();
+        int targetPort = socket.getPort();
+        int sourcePort = socket.getLocalPort();
+
+        de.sascp.message.subTypes.reqHeartbeat reqHeartbeat = new reqHeartbeat(targetIP, targetPort, sourceIP, sourcePort);
         this.parent = parent;
         // a unique id
         id = ++Server.uniqueId;
@@ -50,6 +61,33 @@ class ClientConnectionListener implements Runnable {
             parent.display("Exception creating new Input/output Streams: " + e);
             return;
         }
+//        resHeartbeat = new LinkedBlockingQueue<>();
+//        heartbeat = new Heartbeat(this,resHeartbeat);
+//        new Thread(heartbeat).start();
+        sendHB = new Timer("sendHBCCL");
+        sendHB.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    MessageBuilder.buildMessage(reqHeartbeat, sOutput);
+                } catch (SocketException e) {
+                    parent.display("Heartbeat failed to: " + socket.getInetAddress() + ":" + socket.getPort());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }, 0, 1000);
+        checkHB = new Timer("checkHBCCL");
+        checkHB.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (hbReceived[0] == false) {
+                    goKillYourself();
+                } else {
+                    hbReceived[0] = false;
+                }
+            }
+        }, 1000, TIMEOUT);
     }
 
     // what will run forever
@@ -74,7 +112,7 @@ class ClientConnectionListener implements Runnable {
             while (lookingForCommonHeader) {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
-                    sInput.read(headerBytes);
+                    sInput.read(headerBytes, 0, 12);
                 } catch (IOException e) {
                     // TODO connection failed
                     break;
@@ -91,10 +129,10 @@ class ClientConnectionListener implements Runnable {
             while (lookingForPayload) {
                 if (messageType == UPDATECLIENT) {
                     // TODO Updateclient List einlesen bitte danke
-                } else {
+                } else if (length >= 0) {
                     byte[] payload = new byte[length];
                     try {
-                        sInput.read(payload);
+                        sInput.read(payload, 0, length);
                     } catch (IOException e) {
                         // TODO connection failed
                         break;
@@ -145,6 +183,15 @@ class ClientConnectionListener implements Runnable {
                                 e.printStackTrace();
                             }
                             break;
+                        case (RESHEARTBEAT):
+//                            InetAddress targetIP = socket.getLocalAddress();
+                            InetAddress sourceIP = socket.getInetAddress();
+//                            int targetPort = socket.getLocalPort();
+                            int sourcePort = socket.getPort();
+//                            this.resHeartbeat.offer(new resHeartbeat(targetIP,targetPort,sourceIP,sourcePort));
+                            parent.display("resHeartbeat: " + sourceIP + "|" + sourcePort);
+                            hbReceived[0] = true;
+                            break;
                         default:
                             parent.display("This is Microsoft Sam the Servers default switch-bracket");
                             break;
@@ -172,19 +219,16 @@ class ClientConnectionListener implements Runnable {
         }
     }
 
-    /*
-     * Write a String to the Client output stream
-     */
-    boolean writeMsg(String msg) {
-        // if Client is still connected send the message to it
-        if (!socket.isConnected()) {
-            close();
-            return false;
-        }
-        return true;
-    }
 
     public void setKeepGoing(boolean keepGoing) {
         this.keepGoing = keepGoing;
+    }
+
+    public void goKillYourself() {
+        sendHB.cancel();
+        checkHB.cancel();
+        close();
+        setKeepGoing(false);
+        parent.remove(this);
     }
 }

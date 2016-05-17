@@ -1,11 +1,9 @@
 package de.sascp.util;
 
-import com.sun.xml.internal.messaging.saaj.util.ByteOutputStream;
-import de.sascp.client.ClientInfomartion;
+import de.sascp.client.ClientInformation;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.*;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.*;
@@ -71,7 +69,7 @@ public class MessageBuilder {
 
     public static boolean buildMessage(resFindServer resFindServer, DatagramSocket toSocket) {
         byte[] outgoingMessage = buildCommonHeader(resFindServer);
-        DatagramPacket packet = new DatagramPacket(outgoingMessage, outgoingMessage.length, resFindServer.getDestinationIP(), resFindServer.getDestinationPort());
+        DatagramPacket packet = new DatagramPacket(outgoingMessage, outgoingMessage.length, resFindServer.getTargetIP(), resFindServer.getTargetPort());
         try {
             toSocket.send(packet);
         } catch (IOException e) {
@@ -84,9 +82,9 @@ public class MessageBuilder {
         byte[] usrTextMessage = sendMsgUsr.getMessage().getBytes();
         byte[] usrTextMessageId = Utility.intToByteArray(sendMsgUsr.getMessageId());
         byte[] sourceIp = sendMsgUsr.getSourceIP().getAddress();
-        byte[] targetIp = sendMsgUsr.getDestinationIP().getAddress();
+        byte[] targetIp = sendMsgUsr.getTargetIP().getAddress();
         byte[] sourcePort = intPortToByteArray(sendMsgUsr.getSourcePort());
-        byte[] targetPort = intPortToByteArray(sendMsgUsr.getDestinationPort());
+        byte[] targetPort = intPortToByteArray(sendMsgUsr.getTargetPort());
 
         byte[] messageToBeSent = buildCommonHeader(sendMsgUsr);
         messageToBeSent = concat(messageToBeSent,usrTextMessageId);
@@ -108,9 +106,9 @@ public class MessageBuilder {
         byte[] usrTextMessage = sendMsgGrp.getMessage().getBytes();
         byte[] usrTextMessageId = Utility.intToByteArray(sendMsgGrp.getMessageId());
         byte[] sourceIp = sendMsgGrp.getSourceIP().getAddress();
-        byte[] targetIp = sendMsgGrp.getDestinationIP().getAddress();
+        byte[] targetIp = sendMsgGrp.getTargetIP().getAddress();
         byte[] sourcePort = intPortToByteArray(sendMsgGrp.getSourcePort());
-        byte[] targetPort = intPortToByteArray(sendMsgGrp.getDestinationPort());
+        byte[] targetPort = intPortToByteArray(sendMsgGrp.getTargetPort());
 
         byte[] messageToBeSent = buildCommonHeader(sendMsgGrp);
         messageToBeSent = concat(messageToBeSent,usrTextMessageId);
@@ -128,8 +126,20 @@ public class MessageBuilder {
         return true;
     }
 
+    public static boolean buildMessage(reqHeartbeat reqHeartbeat, OutputStream outputStream) throws IOException {
+        byte[] outgoingMessage = buildCommonHeader(reqHeartbeat);
+        outputStream.write(outgoingMessage);
+
+        return true;
+    }
     public static boolean buildMessage(resHeartbeat resHeartbeat, OutputStream outputStream) {
-        return false;
+        byte[] outgoingMessage = buildCommonHeader(resHeartbeat);
+        try {
+            outputStream.write(outgoingMessage);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
     }
 
     public static boolean buildMessage(reqLogin chatMessage, OutputStream outputStream) {
@@ -153,22 +163,22 @@ public class MessageBuilder {
 
     public static boolean buildMessage(updateClient chatMessage, OutputStream outputStream) {
         byte[] messageToBeSent = concat(new byte[0],buildCommonHeader(chatMessage));
-        for (ClientInfomartion clientInfomartion : chatMessage.getClientInfomartion()) {
+        for (ClientInformation clientInformation : chatMessage.getClientInformation()) {
             byte[] recordIP;
             byte[] recordPort = new byte[2];
             byte[] recordUsernameLength = new byte[1];
             byte[] recordReserved = new byte[1];
             byte[] recordUsername;
 
-            recordIP = clientInfomartion.getClientIP().getAddress();
+            recordIP = clientInformation.getClientIP().getAddress();
 
-            recordPort = intPortToByteArray(clientInfomartion.getClientPort());
+            recordPort = intPortToByteArray(clientInformation.getClientPort());
 
-            recordUsernameLength[0] = (byte) (clientInfomartion.getClientUsername().length() & 0xFF);
+            recordUsernameLength[0] = (byte) (clientInformation.getClientUsername().length() & 0xFF);
 
             recordReserved[0] = 0;
 
-            recordUsername = clientInfomartion.getClientUsername().getBytes();
+            recordUsername = clientInformation.getClientUsername().getBytes();
 
             messageToBeSent = concat(messageToBeSent,recordIP);
             messageToBeSent = concat(messageToBeSent,recordPort);
@@ -198,4 +208,5 @@ public class MessageBuilder {
         byteBuffer.putInt(intToTransform);
         return byteBuffer.array();
     }
+
 }

@@ -4,7 +4,7 @@ package de.sascp.server;
  * Created by Rene on 10.05.2016.
  */
 
-import de.sascp.client.ClientInfomartion;
+import de.sascp.client.ClientInformation;
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
 
@@ -70,25 +70,23 @@ public class Server implements ChatProgramm, Runnable {
      */
     void display(String msg) {
         String time = simpleDateFormat.format(new Date()) + " " + msg;
-        if (serverGUI == null)
-            System.out.println(time);
-        else
-            serverGUI.appendEvent(time + "\n");
+        serverGUI.appendEvent(time + "\n");
     }
 
     // for a client who logoff using the LOGOUT message
     synchronized void remove(ClientConnectionListener ccl) {
         if (listenerHashMap.containsValue(ccl)) {
-            listenerHashMap.remove(ccl);
+            listenerHashMap.remove(ccl.username);
         }
+        serverUnit.doUpdateClients();
     }
 
     public HashMap<String, ClientConnectionListener> getListenerHashMap() {
         return listenerHashMap;
     }
 
-    public HashSet<ClientInfomartion> getConnectedClients() {
-        HashSet<ClientInfomartion> returnValue = listenerHashMap.values().stream().map(ccl -> new ClientInfomartion(
+    public HashSet<ClientInformation> getConnectedClients() {
+        HashSet<ClientInformation> returnValue = listenerHashMap.values().stream().map(ccl -> new ClientInformation(
                 ccl.socket.getInetAddress(),
                 ccl.socket.getPort(),
                 ccl.username,
@@ -96,9 +94,6 @@ public class Server implements ChatProgramm, Runnable {
         return returnValue;
     }
 
-    public SimpleDateFormat getSimpleDateFormat() {
-        return simpleDateFormat;
-    }
 
     @Override
     public void run() {
@@ -108,8 +103,8 @@ public class Server implements ChatProgramm, Runnable {
             // the socket used by the server
             udpServer = new UDPServer(this);
             serverUnit = new ServerUnit(this);
-            new Thread(udpServer).start();
-            new Thread(serverUnit).start();
+            new Thread(udpServer, "UDP Server").start();
+            new Thread(serverUnit, "Server Unit").start();
             ServerSocket serverSocket = new ServerSocket(PORT);
 
             // infinite loop to wait for connections
@@ -125,7 +120,7 @@ public class Server implements ChatProgramm, Runnable {
                     break;
                 ClientConnectionListener t = new ClientConnectionListener(socket, this);  // make a thread of it
 
-                new Thread(t).start();
+                new Thread(t, "CCL[" + socket.getInetAddress() + ":" + socket.getPort() + "]").start();
             }
             // I was asked to stop
             try {
@@ -158,6 +153,7 @@ public class Server implements ChatProgramm, Runnable {
     public void showGUI() {
         this.serverGUI.setVisible(true);
     }
+
 }
 
 

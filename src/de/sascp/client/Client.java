@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -23,27 +24,26 @@ import static de.sascp.protocol.Specification.TIMEOUT;
 class Client implements ChatProgramm {
     // Client Gui Component
     final ClientGUI clientGUI;
-
     // Queues for incoming Messages
     final LinkedBlockingQueue<ChatMessage> incomingMessageQueue;
     final ConcurrentLinkedQueue<resFindServer> incomingResFindServer;
-
-    // Threads for handling incoming messages
-    private final IncomingMessageHandler incomingMessageHandler;
-    private final ClientProtocolParser clientProtocolParser;
-
     // Server instance, which can be used if needed
     private final Server server;
-
+    long uniqueID = Instant.EPOCH.getEpochSecond();
     // for I/O
     Socket socket;
     InputStream sInput;
     OutputStream sOutput;
-
-
+    // Timer and boolean for heartbeat
+    Timer checkHB;
+    Timer reqLoginTimer;
+    ClientInformation myInformation;
+    // Threads for handling incoming messages
+    private IncomingMessageHandler incomingMessageHandler;
+    private ClientProtocolParser clientProtocolParser;
     // List of all connected Clients in the current session
-    private HashSet<ClientInfomartion> connectedClients;
-
+    private HashSet<ClientInformation> connectedClients;
+    private boolean[] hbReceived = {false};
     // The server ip and the client's username
     private String serverip;
     private String username;
@@ -54,10 +54,6 @@ class Client implements ChatProgramm {
         connectedClients = new HashSet<>();
         incomingResFindServer = new ConcurrentLinkedQueue<>();
         incomingMessageQueue = new LinkedBlockingQueue<>();
-
-        // Instantiate IMH and PP, will be started when needed
-        this.incomingMessageHandler = new IncomingMessageHandler(this);
-        this.clientProtocolParser = new ClientProtocolParser(this);
 
         this.server = server;
         this.clientGUI = clientGUI;
@@ -94,10 +90,11 @@ class Client implements ChatProgramm {
                 return false;
             }
 
-            // Create and start Threads for IMH and PP
-            new Thread(clientProtocolParser).start();
-            new Thread(incomingMessageHandler).start();
+
         }
+        // Instantiate IMH and PP, will be started when needed
+        this.incomingMessageHandler = new IncomingMessageHandler(this);
+        this.clientProtocolParser = new ClientProtocolParser(this);
         /*
          Send Login Message according to Protocol specification
          If failed, close socket and return false
@@ -112,6 +109,9 @@ class Client implements ChatProgramm {
      * @return
      */
     private void reqLogin() {
+        // Create and start Threads for IMH and PP
+        new Thread(clientProtocolParser, "ClientProtocolParser " + uniqueID).start();
+        new Thread(incomingMessageHandler, "IncomingMessageHandler " + uniqueID).start();
         reqLogin loginMessage = null;
         try {
             loginMessage = new reqLogin(InetAddress.getByName(this.serverip), this.username, 0);
@@ -119,8 +119,8 @@ class Client implements ChatProgramm {
             display("Unable to resolve Server IP");
         }
         MessageBuilder.buildMessage(loginMessage, sOutput);
-        Timer time = new Timer();
-        time.schedule(new TimerTask() {
+        reqLoginTimer = new Timer();
+        reqLoginTimer.schedule(new TimerTask() {
             @Override
             public void run() {
                 if (connectedClients.isEmpty() || !findOwnUsername()) {
@@ -129,10 +129,62 @@ class Client implements ChatProgramm {
                 } else {
                     display("Logged in - you did it!");
                     clientGUI.clearText();
+                    startHeartbeatTimer();
                 }
             }
         }, TIMEOUT);
     }
+
+    void startHeartbeatTimer() {
+        checkHB = new Timer("checkHBClient");
+        checkHB.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (hbReceived[0] == false) {
+                    new Thread(() -> {
+                        disconnect();
+                        display("Server died! Let me handle dat...");
+                        findNewServer();
+                    });
+                } else {
+                    hbReceived[0] = false;
+                }
+            }
+        }, TIMEOUT / 2, TIMEOUT);
+    }
+
+    void findNewServer() {
+        connectedClients.removeIf(clientInformation -> clientInformation.getClientUsername() == "");
+        InetAddress lowestIP = Utility.getBroadcastIP();
+        int lowestPort = Integer.MAX_VALUE;
+        for (ClientInformation clientInformation :
+                connectedClients) {
+            int compVal = clientInformation.getClientIP().getHostAddress().compareTo(lowestIP.getHostAddress());
+            if (compVal == -1) {
+                lowestIP = clientInformation.getClientIP();
+                lowestPort = clientInformation.getClientPort();
+            } else if (compVal == 0) {
+                if (clientInformation.getClientPort() < lowestPort) {
+                    lowestIP = clientInformation.getClientIP();
+                    lowestPort = clientInformation.getClientPort();
+                }
+            }
+        }
+        if (lowestIP.equals(myInformation.getClientIP()) && lowestPort == myInformation.getClientPort()) {
+            startLocalServer();
+        } else {
+            try {
+                synchronized (this) {
+                    wait(TIMEOUT);
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            reqFindServer();
+        }
+        connectedClients = null;
+    }
+
     // /w hans tolle nachricht
     void sendMsg(String message) {
         if(message.startsWith("/w")) {
@@ -146,7 +198,7 @@ class Client implements ChatProgramm {
             {
                 actualMessage += s + " ";
             }
-            for (ClientInfomartion client : connectedClients) {
+            for (ClientInformation client : connectedClients) {
                 if (client.getClientUsername().equals(target)) {
                     InetAddress targetIP = client.getClientIP();
                     int targetPort = client.getClientPort();
@@ -161,11 +213,12 @@ class Client implements ChatProgramm {
     }
 
     private boolean findOwnUsername() {
-        for (ClientInfomartion clientInfomartion : connectedClients) {
+        for (ClientInformation clientInformation : connectedClients) {
             if (
-                    clientInfomartion.getClientIP().equals(socket.getLocalAddress()) &&
-                            clientInfomartion.getClientPort() == socket.getLocalPort() &&
-                            clientInfomartion.getClientUsername().equals(username)) {
+                    clientInformation.getClientIP().equals(socket.getLocalAddress()) &&
+                            clientInformation.getClientPort() == socket.getLocalPort() &&
+                            clientInformation.getClientUsername().equals(username)) {
+                myInformation = clientInformation;
                 return true;
             }
         }
@@ -194,16 +247,24 @@ class Client implements ChatProgramm {
      * Close the Input/Output streams and disconnect not much to do in the catch clause
      */
     private void disconnect() {
-        incomingMessageQueue.offer(new resHeartbeat(null, 0));
+        reqLoginTimer.cancel();
         incomingMessageHandler.stopRunning();
-        try {
-            if (sInput != null) sInput.close();
-        } catch (Exception e) {
-        } // not much else I can do
-        try {
-            if (sOutput != null) sOutput.close();
-        } catch (Exception e) {
-        } // not much else I can do
+        clientProtocolParser.stopRunning();
+
+//        try {
+//            socket.shutdownInput();
+//            socket.shutdownOutput();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        try {
+//            if (sInput != null) sInput.close();
+//        } catch (Exception e) {
+//        } // not much else I can do
+//        try {
+//            if (sOutput != null) sOutput.close();
+//        } catch (Exception e) {
+//        } // not much else I can do
         try {
             if (socket != null) socket.close();
         } catch (Exception e) {
@@ -212,25 +273,24 @@ class Client implements ChatProgramm {
         // inform the GUI
         if (clientGUI != null)
             clientGUI.connectionFailed();
-        clientProtocolParser.stopRunning();
+        reqLoginTimer = null;
+        incomingMessageHandler = null;
+        clientProtocolParser = null;
+        socket = null;
+        sOutput = null;
+        sInput = null;
 
+        checkHB.cancel();
     }
 
     public void reqFindServer() {
         sendMessage(new reqFindServer(Utility.getBroadcastIP(), PORT));
-
         Timer time = new Timer();
         time.schedule(new TimerTask() {
             @Override
             public void run() {
                 if (incomingResFindServer.isEmpty()) {
-                    display("No server found!");
-                    display("Starting own server...");
-                    new Thread(server).start();
-                    server.showGUI();
-                    display("Server started");
-                    clientGUI.setServerTextField("127.0.0.1");
-                    clientGUI.enableFindServerButton(false);
+                    startLocalServer();
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
@@ -247,17 +307,23 @@ class Client implements ChatProgramm {
         }, TIMEOUT);
     }
 
-    private void connectToOwnServer() {
-        // TODO
+    void startLocalServer() {
+        display("No server found!");
+        display("Starting own server...");
+        new Thread(server, "ServerThread").start();
+        server.showGUI();
+        display("Server started");
+        clientGUI.setServerTextField("127.0.0.1");
+        clientGUI.enableFindServerButton(false);
     }
 
     public void displayConnectedClients() {
         display("Connected Nodes:");
-        for (ClientInfomartion clientInfomartion : connectedClients) {
-            if (!clientInfomartion.isServer() && clientInfomartion.getClientUsername() != username) {
-                display(clientInfomartion.getClientIP().getHostAddress() + ":" + clientInfomartion.getClientPort() + " | " + clientInfomartion.getClientUsername());
+        for (ClientInformation clientInformation : connectedClients) {
+            if (!clientInformation.isServer() && clientInformation.getClientUsername() != username) {
+                display(clientInformation.getClientIP().getHostAddress() + ":" + clientInformation.getClientPort() + " | " + clientInformation.getClientUsername());
             } else {
-                display(clientInfomartion.getClientIP().getHostAddress() + ":" + clientInfomartion.getClientPort() + " | " + "SERVER");
+                display(clientInformation.getClientIP().getHostAddress() + ":" + clientInformation.getClientPort() + " | " + "SERVER");
             }
         }
     }
@@ -266,20 +332,16 @@ class Client implements ChatProgramm {
         this.username = username;
     }
 
-    public String getServerip() {
-        return serverip;
+    public HashSet<ClientInformation> getConnectedClients() {
+        return connectedClients;
     }
 
-    public void setServerip(String serverip) {
-        this.serverip = serverip;
-    }
-
-    public void setConnectedClients(HashSet<ClientInfomartion> connectedClients) {
+    public void setConnectedClients(HashSet<ClientInformation> connectedClients) {
         this.connectedClients = connectedClients;
     }
 
-    public HashSet<ClientInfomartion> getConnectedClients() {
-        return connectedClients;
+    public boolean[] getHbReceived() {
+        return hbReceived;
     }
 }
 

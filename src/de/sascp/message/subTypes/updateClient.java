@@ -1,6 +1,6 @@
 package de.sascp.message.subTypes;
 
-import de.sascp.client.ClientInfomartion;
+import de.sascp.client.ClientInformation;
 import de.sascp.message.ChatMessage;
 
 import java.net.InetAddress;
@@ -13,19 +13,19 @@ import static de.sascp.protocol.Specification.UPDATECLIENT;
  * Created by Rene on 11.05.2016.
  */
 public class updateClient extends ChatMessage {
-    private HashSet<ClientInfomartion> clientInfomartion = new HashSet<>();
+    private HashSet<ClientInformation> clientInformation = new HashSet<>();
 
-    public updateClient(InetAddress destinationIP, int destinationPort, HashSet<ClientInfomartion> clientInfomartion) {
-        super(destinationIP, destinationPort, null, PORT, UPDATECLIENT, 0);
-        this.clientInfomartion = clientInfomartion;
-        this.setLength(clientInfomartion.size());
+    public updateClient(InetAddress targetIP, int targetPort, HashSet<ClientInformation> clientInformation) {
+        super(targetIP, targetPort, null, PORT, UPDATECLIENT, 0);
+        this.clientInformation = clientInformation;
+        this.setLength(clientInformation.size());
     }
 
-    public HashSet<ClientInfomartion> getClientInfomartion() {
-        return clientInfomartion;
+    public HashSet<ClientInformation> getClientInformation() {
+        return clientInformation;
     }
 
     public int getLength() {
-        return clientInfomartion.size();
+        return clientInformation.size();
     }
 }

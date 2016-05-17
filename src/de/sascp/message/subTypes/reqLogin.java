@@ -13,8 +13,8 @@ import static de.sascp.protocol.Specification.REQLOGIN;
 public class reqLogin extends ChatMessage {
     private final String username;
 
-    public reqLogin(InetAddress destinationIP, String username, int sourcePort) {
-        super(destinationIP, PORT, null, sourcePort, REQLOGIN, username.length());
+    public reqLogin(InetAddress targetIP, String username, int sourcePort) {
+        super(targetIP, PORT, null, sourcePort, REQLOGIN, username.length());
         this.username = username;
     }
 

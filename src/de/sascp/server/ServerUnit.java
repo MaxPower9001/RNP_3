@@ -37,17 +37,14 @@ class ServerUnit implements Runnable {
                     answerRequestFindServer(currentMessage);
                     break;
                 case (REQLOGIN):
-                    for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
-                        updateClient updateClient = new updateClient(ccl.socket.getInetAddress(), ccl.socket.getPort(), parent.getConnectedClients());
-                        buildMessage(updateClient, ccl.sOutput);
-                    }
+                    doUpdateClients();
                     break;
                 case (SENDMSGUSR):
                     boolean targetStillInClientList = false;
                     OutputStream targetOutputStream = null;
                     for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                        if (clientConnection.socket.getInetAddress().equals(currentMessage.getDestinationIP()) &&
-                            clientConnection.socket.getPort() == (currentMessage.getDestinationPort())    ) {
+                        if (clientConnection.socket.getInetAddress().equals(currentMessage.getTargetIP()) &&
+                                clientConnection.socket.getPort() == (currentMessage.getTargetPort())) {
                             targetStillInClientList = true;
                             targetOutputStream = clientConnection.sOutput;
                         }
@@ -68,6 +65,13 @@ class ServerUnit implements Runnable {
                     parent.display("The Queue had sth in it - sth unknown *scary noises*");
                     break;
             }
+        }
+    }
+
+    public void doUpdateClients() {
+        for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
+            updateClient updateClient = new updateClient(ccl.socket.getInetAddress(), ccl.socket.getPort(), parent.getConnectedClients());
+            buildMessage(updateClient, ccl.sOutput);
         }
     }
 

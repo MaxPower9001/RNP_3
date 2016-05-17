@@ -13,9 +13,9 @@ public class sendMsgUsr extends ChatMessage {
     private final String message;
     private final int messageId;
 
-    public sendMsgUsr(InetAddress destinationIP, int destinationPort, InetAddress sourceIP, int sourcePort, int messageId, String message) {
+    public sendMsgUsr(InetAddress targetIP, int targetPort, InetAddress sourceIP, int sourcePort, int messageId, String message) {
         // Length: 2 times IP, 2 times Port, messageID + length of actual message
-        super(destinationIP, destinationPort, sourceIP, sourcePort, SENDMSGUSR, (2*4 + 2*2 + 4 + message.length()));
+        super(targetIP, targetPort, sourceIP, sourcePort, SENDMSGUSR, (2 * 4 + 2 * 2 + 4 + message.length()));
         this.message = message;
         this.messageId = messageId;
     }

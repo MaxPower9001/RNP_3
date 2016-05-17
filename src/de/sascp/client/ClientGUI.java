@@ -115,7 +115,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         whoIsIn.setEnabled(false);
         label.setText("Enter your username below");
         tf.setText("Anonymous");
-        // reset host name as a construction time
+        // reset host name as a construction reqLoginTimer
         tfServer.setText(defaultHost);
         // let the user change them
         tfServer.setEditable(false);
