@@ -27,6 +27,7 @@ class ClientProtocolParser implements Runnable {
     private final Client parent;
     private boolean keepGoing = true;
     private boolean notLoggedIn = true;
+    int counter = 0;
 
     public ClientProtocolParser(Client parent) {
         this.parent = parent;
@@ -45,6 +46,8 @@ class ClientProtocolParser implements Runnable {
                 // Look for Common Header, until one received
                 // As long the client is not logged in, we wait for an resFindServer Package transfered via UDP
                 while (lookingForCommonHeader) {
+                    counter++;
+                    System.out.println(counter);
                     // Headerbyte with specific length
                     byte[] headerBytes = new byte[CHLENGTH];
                     try {
@@ -65,7 +68,11 @@ class ClientProtocolParser implements Runnable {
 
                     // Check if correct Common Header
                     if (checkCommonHeader(version, messageType, length)) {
-                        lookingForCommonHeader = false;
+                        try {
+                            parent.socket.close();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
                 // If Common Header found, wait for payload
