@@ -1,12 +1,10 @@
 package de.sascp.client;
 
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.resFindServer;
-import de.sascp.message.subTypes.sendMsgGrp;
-import de.sascp.message.subTypes.sendMsgUsr;
-import de.sascp.message.subTypes.updateClient;
+import de.sascp.message.subTypes.*;
 
 import static de.sascp.protocol.Specification.*;
+import static de.sascp.util.Utility.OHSHIT;
 
 /**
  * Converts byte[] Streams checked by the Protocol Parser into ChatMessage Objects and answers Heartbeat-Requests
@@ -32,6 +30,8 @@ class IncomingMessageHandler implements Runnable {
             }
             assert currentMessage != null;
             switch (currentMessage.getMessageType()) {
+                case (OHSHIT):
+                    break;
                 case (RESFINDSERVER):
                     parent.incomingResFindServer.offer((resFindServer) currentMessage);
                     break;
@@ -69,10 +69,14 @@ class IncomingMessageHandler implements Runnable {
                     parent.display("Nothing found - I guess nobody wants to talk to you...");
                     break;
             }
+            if (!keepGoing) {
+                parent.display("IMH has left the building!");
+            }
         }
     }
 
     public void stopRunning() {
         this.keepGoing = false;
+        parent.incomingMessageQueue.offer(new shitIsAboutToGoDownMsg());
     }
 }

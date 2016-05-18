@@ -17,11 +17,6 @@ public class Specification {
     // Port Number
     public static final int PORT = 4242;
 
-    // example types
-    public static final int WHOISIN = 1000;
-    public static final int MESSAGE = 1001;
-    public static final int LOGOUT = 1002;
-
     // actual message types
     public static final int LOWESTMESSAGETYPE = 0;
     public static final int HIGHESTMESSAGETYPE = 10;

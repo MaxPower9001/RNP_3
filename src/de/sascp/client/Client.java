@@ -57,8 +57,8 @@ class Client implements ChatProgramm {
         incomingMessageQueue = new LinkedBlockingQueue<>();
 
         // Instantiate IMH and PP, will be started when needed
-        this.incomingMessageHandler = new IncomingMessageHandler(this);
-        this.clientProtocolParser = new ClientProtocolParser(this);
+        incomingMessageHandler = new IncomingMessageHandler(this);
+        clientProtocolParser = new ClientProtocolParser(this);
 
         reqLoginTimer = new Timer("reqLoginTimer");
         checkHB = new Timer("checkHBClient");
@@ -100,6 +100,8 @@ class Client implements ChatProgramm {
             }
 
             // Create and start Threads for IMH and PP
+            incomingMessageHandler = new IncomingMessageHandler(this);
+            clientProtocolParser = new ClientProtocolParser(this);
             new Thread(clientProtocolParser, "ClientProtocolParser " + uniqueID).start();
             new Thread(incomingMessageHandler, "IncomingMessageHandler " + uniqueID).start();
         }
@@ -221,8 +223,7 @@ class Client implements ChatProgramm {
         for (ClientInformation clientInformation : connectedClients) {
             if (
                     clientInformation.getClientIP().equals(socket.getLocalAddress()) &&
-                            clientInformation.getClientPort() == socket.getLocalPort() &&
-                            clientInformation.getClientUsername().equals(username)) {
+                            clientInformation.getClientPort() == socket.getLocalPort()) {
                 myInformation = clientInformation;
                 return true;
             }
@@ -253,7 +254,6 @@ class Client implements ChatProgramm {
      */
     private void disconnect() {
         incomingMessageHandler.stopRunning();
-        clientProtocolParser.stopRunning();
         try {
             if (sInput != null) sInput.close();
         } catch (Exception e) {

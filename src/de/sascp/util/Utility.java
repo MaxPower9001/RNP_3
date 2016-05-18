@@ -4,7 +4,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
-import java.util.Date;
 
 import static de.sascp.protocol.Specification.*;
 
@@ -12,6 +11,7 @@ import static de.sascp.protocol.Specification.*;
  * Created by Rene on 13.05.2016.
  */
 public class Utility {
+    public static final int OHSHIT = -9001;
     public static final int CHLENGTH = 12;
     private static final String BROADCASTIP = "127.0.0.255";
     private static final String LOCALIP = "0.0.0.0";
