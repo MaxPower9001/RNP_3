@@ -37,6 +37,7 @@ class Client implements ChatProgramm {
     // Timer and boolean for heartbeat
     Timer checkHB;
     Timer reqLoginTimer;
+    Timer resFindServer;
     ClientInformation myInformation;
     // Threads for handling incoming messages
     private IncomingMessageHandler incomingMessageHandler;
@@ -54,6 +55,14 @@ class Client implements ChatProgramm {
         connectedClients = new HashSet<>();
         incomingResFindServer = new ConcurrentLinkedQueue<>();
         incomingMessageQueue = new LinkedBlockingQueue<>();
+
+        // Instantiate IMH and PP, will be started when needed
+        this.incomingMessageHandler = new IncomingMessageHandler(this);
+        this.clientProtocolParser = new ClientProtocolParser(this);
+
+        reqLoginTimer = new Timer("reqLoginTimer");
+        checkHB = new Timer("checkHBClient");
+        resFindServer = new Timer("resFindServer");
 
         this.server = server;
         this.clientGUI = clientGUI;
@@ -90,11 +99,10 @@ class Client implements ChatProgramm {
                 return false;
             }
 
-
+            // Create and start Threads for IMH and PP
+            new Thread(clientProtocolParser, "ClientProtocolParser " + uniqueID).start();
+            new Thread(incomingMessageHandler, "IncomingMessageHandler " + uniqueID).start();
         }
-        // Instantiate IMH and PP, will be started when needed
-        this.incomingMessageHandler = new IncomingMessageHandler(this);
-        this.clientProtocolParser = new ClientProtocolParser(this);
         /*
          Send Login Message according to Protocol specification
          If failed, close socket and return false
@@ -109,9 +117,6 @@ class Client implements ChatProgramm {
      * @return
      */
     private void reqLogin() {
-        // Create and start Threads for IMH and PP
-        new Thread(clientProtocolParser, "ClientProtocolParser " + uniqueID).start();
-        new Thread(incomingMessageHandler, "IncomingMessageHandler " + uniqueID).start();
         reqLogin loginMessage = null;
         try {
             loginMessage = new reqLogin(InetAddress.getByName(this.serverip), this.username, 0);
@@ -125,19 +130,19 @@ class Client implements ChatProgramm {
             public void run() {
                 if (connectedClients.isEmpty() || !findOwnUsername()) {
                     display("Bad Login - maybe try another Username");
+                    checkHB.cancel();
                     clientGUI.connectionFailed();
                 } else {
                     display("Logged in - you did it!");
                     clientGUI.clearText();
                     startHeartbeatTimer();
                 }
-                reqLoginTimer.cancel();
             }
         }, TIMEOUT);
     }
 
     void startHeartbeatTimer() {
-        checkHB = new Timer("checkHBClient");
+        checkHB = new Timer();
         checkHB.schedule(new TimerTask() {
             @Override
             public void run() {
@@ -182,7 +187,7 @@ class Client implements ChatProgramm {
             }
             reqFindServer();
         }
-        connectedClients = null;
+        connectedClients.clear();
     }
 
     // /w hans tolle nachricht
@@ -247,7 +252,6 @@ class Client implements ChatProgramm {
      * Close the Input/Output streams and disconnect not much to do in the catch clause
      */
     private void disconnect() {
-        reqLoginTimer.cancel();
         incomingMessageHandler.stopRunning();
         clientProtocolParser.stopRunning();
         try {
@@ -265,20 +269,13 @@ class Client implements ChatProgramm {
 
         // inform the GUI
         clientGUI.connectionFailed();
-        reqLoginTimer = null;
-        incomingMessageHandler = null;
-        clientProtocolParser = null;
-//        socket = null;
-//        sOutput = null;
-//        sInput = null;
-
         checkHB.cancel();
     }
 
     public void reqFindServer() {
         sendMessage(new reqFindServer(Utility.getBroadcastIP(), PORT));
-        Timer time = new Timer();
-        time.schedule(new TimerTask() {
+        resFindServer = new Timer();
+        resFindServer.schedule(new TimerTask() {
             @Override
             public void run() {
                 if (incomingResFindServer.isEmpty()) {

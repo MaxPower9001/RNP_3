@@ -14,7 +14,10 @@ import static de.sascp.protocol.Specification.*;
 public class Utility {
     public static final int CHLENGTH = 12;
     private static final String BROADCASTIP = "255.255.255.255";
+    private static final String LOCALIP = "127.0.0.1";
     private static InetAddress broadcastIP;
+    private static InetAddress localIP;
+
 
     public static InetAddress getBroadcastIP() {
         if (broadcastIP == null) {
@@ -25,6 +28,16 @@ public class Utility {
             }
         }
         return broadcastIP;
+    }
+    public static InetAddress getLocalIP() {
+        if (localIP == null) {
+            try {
+                localIP = InetAddress.getByName(LOCALIP);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+            }
+        }
+        return localIP;
     }
 
     public static int intFromFourBytes(byte[] payload, int offset, int length) {

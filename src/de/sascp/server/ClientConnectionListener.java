@@ -36,6 +36,7 @@ class ClientConnectionListener implements Runnable {
     Timer checkHB;
     private boolean keepGoing = true;
     private boolean[] hbReceived = {false};
+    reqHeartbeat reqHeartbeat;
 
 
 
@@ -46,7 +47,7 @@ class ClientConnectionListener implements Runnable {
         int targetPort = socket.getPort();
         int sourcePort = socket.getLocalPort();
 
-        de.sascp.message.subTypes.reqHeartbeat reqHeartbeat = new reqHeartbeat(targetIP, targetPort, sourceIP, sourcePort);
+        reqHeartbeat = new reqHeartbeat(targetIP, targetPort, sourceIP, sourcePort);
         this.parent = parent;
         // a unique id
         id = ++Server.uniqueId;
@@ -61,9 +62,9 @@ class ClientConnectionListener implements Runnable {
             parent.display("Exception creating new Input/output Streams: " + e);
             return;
         }
-//        resHeartbeat = new LinkedBlockingQueue<>();
-//        heartbeat = new Heartbeat(this,resHeartbeat);
-//        new Thread(heartbeat).start();
+    }
+
+    private void startSendCheckHB(final Socket socket, final Server parent, final reqHeartbeat reqHeartbeat) {
         sendHB = new Timer("sendHBCCL");
         sendHB.schedule(new TimerTask() {
             @Override
@@ -72,6 +73,7 @@ class ClientConnectionListener implements Runnable {
                     MessageBuilder.buildMessage(reqHeartbeat, sOutput);
                 } catch (SocketException e) {
                     parent.display("Heartbeat failed to: " + socket.getInetAddress() + ":" + socket.getPort());
+                    sendHB.cancel();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -141,13 +143,15 @@ class ClientConnectionListener implements Runnable {
                         case (REQLOGIN):
                             this.username = new String(payload, Charset.forName(CHARSET));
                             if (username.length() == 0 || parent.getListenerHashMap().containsKey(username)) {
-//                                keepGoing = false;
                                 parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
                                 parent.display("But his username was already taken - poor fella...");
+                                this.username = null;
                             } else {
                                 parent.getListenerHashMap().put(username, this);
+                                parent.display(username + " added to Clients");
                                 if (parent.incomingMessageQueue.offer(new reqLogin(socket.getInetAddress(), username, socket.getPort()))) {
                                     parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
+                                    startSendCheckHB(socket,parent,reqHeartbeat);
                                 } else {
                                     parent.display("I was not able to put reqLogin into incoming message queue - forigve me senpai!");
                                 }
