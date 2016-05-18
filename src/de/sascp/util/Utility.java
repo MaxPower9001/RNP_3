@@ -13,8 +13,8 @@ import static de.sascp.protocol.Specification.*;
  */
 public class Utility {
     public static final int CHLENGTH = 12;
-    private static final String BROADCASTIP = "255.255.255.255";
-    private static final String LOCALIP = "127.0.0.1";
+    private static final String BROADCASTIP = "127.255.255.255";
+    private static final String LOCALIP = "localhost";
     private static InetAddress broadcastIP;
     private static InetAddress localIP;
 

@@ -1,6 +1,7 @@
 package de.sascp.server;
 
 import de.sascp.message.subTypes.reqFindServer;
+import de.sascp.util.Utility;
 
 import java.io.IOException;
 import java.net.*;
@@ -19,11 +20,7 @@ public class UDPServer implements Runnable {
     @Override
     public void run() {
         try {
-            try {
-                socket = new DatagramSocket(PORT, InetAddress.getByName("0.0.0.0"));
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
+            socket = new DatagramSocket(PORT, Utility.getLocalIP());
         } catch (SocketException e) {
             e.printStackTrace();
         }

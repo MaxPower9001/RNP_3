@@ -7,6 +7,7 @@ package de.sascp.server;
 import de.sascp.client.ClientInformation;
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
+import de.sascp.util.Utility;
 
 import java.io.IOException;
 import java.net.ServerSocket;
@@ -59,7 +60,7 @@ public class Server implements ChatProgramm, Runnable {
         // connect to myself as Client to exit statement
         // Socket socket = serverSocket.accept();
         try {
-            new Socket("localhost", PORT);
+            new Socket(Utility.getLocalIP(), PORT);
         } catch (Exception e) {
             // nothing I can really do
         }
