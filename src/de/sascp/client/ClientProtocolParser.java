@@ -68,6 +68,8 @@ class ClientProtocolParser implements Runnable {
 
                     // Check if correct Common Header
                     if (checkCommonHeader(version, messageType, length)) {
+                        lookingForCommonHeader = false;
+                    } else {
                         try {
                             parent.socket.close();
                         } catch (IOException e) {
