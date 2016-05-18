@@ -131,6 +131,7 @@ class Client implements ChatProgramm {
                     clientGUI.clearText();
                     startHeartbeatTimer();
                 }
+                reqLoginTimer.cancel();
             }
         }, TIMEOUT);
     }
