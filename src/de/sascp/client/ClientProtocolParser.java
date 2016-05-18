@@ -48,11 +48,14 @@ class ClientProtocolParser implements Runnable {
                     // Headerbyte with specific length
                     byte[] headerBytes = new byte[CHLENGTH];
                     try {
-                        parent.sInput.read(headerBytes, 0, 12);
+                        parent.sInput.read(headerBytes);
                     } catch (IOException e) {
                         parent.display("Error reading header bytes - pls do sth");
                         e.printStackTrace();
                         // Stop looking for header data
+                        break;
+                    }
+                    if(!keepGoing || parent.sInput == null){
                         break;
                     }
                     // Seperate values inside headerBytes
@@ -81,10 +84,10 @@ class ClientProtocolParser implements Runnable {
 
                             // read into each byte[] from input stream
                             try {
-                                parent.sInput.read(recordIP, 0, 4);
-                                parent.sInput.read(recordPort, 0, 2);
-                                parent.sInput.read(recordUsernameLength, 0, 1);
-                                parent.sInput.read(recordReserved, 0, 1);
+                                parent.sInput.read(recordIP);
+                                parent.sInput.read(recordPort);
+                                parent.sInput.read(recordUsernameLength);
+                                parent.sInput.read(recordReserved);
                             } catch (IOException e) {
                                 parent.display("Error reading payload bytes for UpdateClient Package - this is getting out of hand!");
                                 // Stop looking for payload
@@ -94,7 +97,7 @@ class ClientProtocolParser implements Runnable {
                             byte[] recordUsername = new byte[recordUsernameLength[0]];
                             // read username from input stream
                             try {
-                                parent.sInput.read(recordUsername, 0, recordUsernameLength[0]);
+                                parent.sInput.read(recordUsername);
                             } catch (IOException e) {
                                 parent.display("Error reading username bytes for UpdateClient Package - fix it, now!");
                             }
@@ -129,7 +132,7 @@ class ClientProtocolParser implements Runnable {
 
                         // read into byte[] from input stream
                         try {
-                            parent.sInput.read(payload, 0, length);
+                            parent.sInput.read(payload);
                         } catch (IOException e) {
                             parent.display("Error reading payload for non UpdateClient package - git gud");
                             // stop looking for payload
@@ -191,15 +194,8 @@ class ClientProtocolParser implements Runnable {
             }
         } catch (NullPointerException e) {
             if (parent.sInput == null) {
-
+                parent.display("Null Pointer");
             } else {
-                e.printStackTrace();
-            }
-        } finally {
-            try {
-                parent.sInput.close();
-                parent.sOutput.close();
-            } catch (IOException e) {
                 e.printStackTrace();
             }
         }

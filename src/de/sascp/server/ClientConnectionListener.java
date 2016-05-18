@@ -112,7 +112,7 @@ class ClientConnectionListener implements Runnable {
             while (lookingForCommonHeader) {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
-                    sInput.read(headerBytes, 0, 12);
+                    sInput.read(headerBytes);
                 } catch (IOException e) {
                     // TODO connection failed
                     break;
@@ -132,7 +132,7 @@ class ClientConnectionListener implements Runnable {
                 } else if (length >= 0) {
                     byte[] payload = new byte[length];
                     try {
-                        sInput.read(payload, 0, length);
+                        sInput.read(payload);
                     } catch (IOException e) {
                         // TODO connection failed
                         break;
@@ -184,11 +184,8 @@ class ClientConnectionListener implements Runnable {
                             }
                             break;
                         case (RESHEARTBEAT):
-//                            InetAddress targetIP = socket.getLocalAddress();
                             InetAddress sourceIP = socket.getInetAddress();
-//                            int targetPort = socket.getLocalPort();
                             int sourcePort = socket.getPort();
-//                            this.resHeartbeat.offer(new resHeartbeat(targetIP,targetPort,sourceIP,sourcePort));
                             parent.display("resHeartbeat: " + sourceIP + "|" + sourcePort);
                             hbReceived[0] = true;
                             break;

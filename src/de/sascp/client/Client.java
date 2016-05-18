@@ -72,7 +72,7 @@ class Client implements ChatProgramm {
      * <p>- reqLogin function returns with false</p>
      */
     boolean start() {
-        if (socket == null) {
+        if (socket == null || socket.isClosed()) {
             // establishing socket to server for TCP communication
             try {
                 socket = new Socket(serverip, PORT);
@@ -141,11 +141,10 @@ class Client implements ChatProgramm {
             @Override
             public void run() {
                 if (hbReceived[0] == false) {
-                    new Thread(() -> {
-                        disconnect();
-                        display("Server died! Let me handle dat...");
-                        findNewServer();
-                    });
+                    checkHB.cancel();
+                    disconnect();
+                    display("Server died! Let me handle dat...");
+                    findNewServer();
                 } else {
                     hbReceived[0] = false;
                 }
@@ -250,35 +249,27 @@ class Client implements ChatProgramm {
         reqLoginTimer.cancel();
         incomingMessageHandler.stopRunning();
         clientProtocolParser.stopRunning();
-
-//        try {
-//            socket.shutdownInput();
-//            socket.shutdownOutput();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//        try {
-//            if (sInput != null) sInput.close();
-//        } catch (Exception e) {
-//        } // not much else I can do
-//        try {
-//            if (sOutput != null) sOutput.close();
-//        } catch (Exception e) {
-//        } // not much else I can do
+        try {
+            if (sInput != null) sInput.close();
+        } catch (Exception e) {
+        } // not much else I can do
+        try {
+            if (sOutput != null) sOutput.close();
+        } catch (Exception e) {
+        } // not much else I can do
         try {
             if (socket != null) socket.close();
         } catch (Exception e) {
         } // not much else I can do
 
         // inform the GUI
-        if (clientGUI != null)
-            clientGUI.connectionFailed();
+        clientGUI.connectionFailed();
         reqLoginTimer = null;
         incomingMessageHandler = null;
         clientProtocolParser = null;
-        socket = null;
-        sOutput = null;
-        sInput = null;
+//        socket = null;
+//        sOutput = null;
+//        sInput = null;
 
         checkHB.cancel();
     }
@@ -303,6 +294,7 @@ class Client implements ChatProgramm {
                     clientGUI.setServerTextField(lowestIP.getHostAddress());
                 }
                 incomingResFindServer.clear();
+
             }
         }, TIMEOUT);
     }

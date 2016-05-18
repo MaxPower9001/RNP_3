@@ -165,7 +165,7 @@ public class MessageBuilder {
         byte[] messageToBeSent = concat(new byte[0],buildCommonHeader(chatMessage));
         for (ClientInformation clientInformation : chatMessage.getClientInformation()) {
             byte[] recordIP;
-            byte[] recordPort = new byte[2];
+            byte[] recordPort;
             byte[] recordUsernameLength = new byte[1];
             byte[] recordReserved = new byte[1];
             byte[] recordUsername;
