@@ -107,6 +107,7 @@ public class Server implements ChatProgramm, Runnable {
             new Thread(udpServer, "UDP Server").start();
             new Thread(serverUnit, "Server Unit").start();
             ServerSocket serverSocket = new ServerSocket(PORT);
+            System.out.println("Server IP: " + serverSocket.getLocalSocketAddress());
 
             // infinite loop to wait for connections
             while (keepGoing) {

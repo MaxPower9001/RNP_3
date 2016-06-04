@@ -1,11 +1,13 @@
 package de.sascp.util;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Enumeration;
 
 import static de.sascp.protocol.Specification.*;
+import static java.lang.System.out;
 
 /**
  * Created by Rene on 13.05.2016.
@@ -13,30 +15,19 @@ import static de.sascp.protocol.Specification.*;
 public class Utility {
     public static final int OHSHIT = -9001;
     public static final int CHLENGTH = 12;
-    private static final String BROADCASTIP = "127.0.0.255";
-    private static final String LOCALIP = "0.0.0.0";
     private static InetAddress broadcastIP;
     private static InetAddress localIP;
 
+    private static final boolean showAllNIC = false;
+
+    private static final String NIC = "eth1";
+
 
     public static InetAddress getBroadcastIP() {
-        if (broadcastIP == null) {
-            try {
-                broadcastIP = InetAddress.getByName(BROADCASTIP);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
-        }
         return broadcastIP;
     }
+
     public static InetAddress getLocalIP() {
-        if (localIP == null) {
-            try {
-                localIP = InetAddress.getByName(LOCALIP);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-            }
-        }
         return localIP;
     }
 
@@ -69,7 +60,7 @@ public class Utility {
     public static byte[] concat(byte[] a, byte[] b) {
         int aLen = a.length;
         int bLen = b.length;
-        byte[] c= new byte[aLen+bLen];
+        byte[] c = new byte[aLen + bLen];
         System.arraycopy(a, 0, c, 0, aLen);
         System.arraycopy(b, 0, c, aLen, bLen);
         return c;
@@ -93,10 +84,62 @@ public class Utility {
     public static byte[] getByteArrayFragment(byte[] dataarray, int offset, int length) {
         byte[] returnValue = new byte[length];
         int counter = 0;
-        for(int i = offset ; i < offset+length; i++){
+        for (int i = offset; i < offset + length; i++) {
             returnValue[counter] = dataarray[i];
             counter++;
         }
         return returnValue;
+    }
+
+    public static void main(String args[]) throws SocketException {
+        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+        for (NetworkInterface netint : Collections.list(nets)){
+            displayInterfaceInformation(netint);
+        }
+    }
+
+    static void displayInterfaceInformation(NetworkInterface netint) throws SocketException {
+        if(showAllNIC){
+            out.printf("Display name: %s\n", netint.getDisplayName());
+            out.printf("Name: %s\n", netint.getName());
+        }
+        Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+        for (InetAddress inetAddress : Collections.list(inetAddresses)) {
+            if (showAllNIC) {
+                out.printf("InetAddress: %s\n", inetAddress);
+            }
+            if(netint.getName().equals(NIC) && inetAddress.getClass() == Inet4Address.class && !inetAddress.isLoopbackAddress()){
+                localIP = inetAddress;
+                broadcastIP = netint.getInterfaceAddresses().get(0).getBroadcast();
+                System.out.println("Local IP: " + localIP);
+                System.out.println("Broadcast IP: " + broadcastIP);
+            }
+        }
+        out.printf("\n");
+    }
+    public static int compare(InetAddress adr1, InetAddress adr2) {
+        byte[] ba1 = adr1.getAddress();
+        byte[] ba2 = adr2.getAddress();
+
+        // general ordering: ipv4 before ipv6
+        if(ba1.length < ba2.length) return -1;
+        if(ba1.length > ba2.length) return 1;
+
+        // we have 2 ips of the same type, so we have to compare each byte
+        for(int i = 0; i < ba1.length; i++) {
+            int b1 = unsignedByteToInt(ba1[i]);
+            int b2 = unsignedByteToInt(ba2[i]);
+            if(b1 == b2)
+                continue;
+            if(b1 < b2)
+                return -1;
+            else
+                return 1;
+        }
+        return 0;
+    }
+
+    private static int unsignedByteToInt(byte b) {
+        return (int) b & 0xFF;
     }
 }

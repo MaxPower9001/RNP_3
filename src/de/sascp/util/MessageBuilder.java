@@ -56,10 +56,16 @@ public class MessageBuilder {
                 int messageType = intFromFourBytes(headerBytes, HEADERTYPEOFFSET, 4); // MessageType
                 int length = intFromFourBytes(headerBytes, HEADERLENGTHOFFSET, 4);  // Length
 
+                System.out.println("UDP Local IP: " + toSocket.getLocalAddress() + ":" + toSocket.getLocalPort());
+                System.out.println("UDP Remote IP: " + incomingPacket.getAddress() + ":" + incomingPacket.getPort());
+
                 if (checkCommonHeader(version, messageType, length)) {
-                    incomingMessageQueue.offer(new resFindServer(toSocket.getLocalAddress(), toSocket.getLocalPort(), ((InetSocketAddress) incomingPacket.getSocketAddress()).getAddress(), ((
-                            (InetSocketAddress) incomingPacket.getSocketAddress())
-                            .getPort())));
+                    incomingMessageQueue.offer(
+                            new resFindServer(
+                                    toSocket.getLocalAddress(),
+                                    toSocket.getLocalPort(),
+                                    incomingPacket.getAddress(),
+                                    incomingPacket.getPort()));
                 }
             }
         }

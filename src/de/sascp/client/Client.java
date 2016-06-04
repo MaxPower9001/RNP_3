@@ -20,6 +20,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import static de.sascp.protocol.Specification.PORT;
 import static de.sascp.protocol.Specification.TIMEOUT;
+import static de.sascp.util.Utility.compare;
 
 class Client implements ChatProgramm {
     // Client Gui Component
@@ -273,7 +274,7 @@ class Client implements ChatProgramm {
     }
 
     public void reqFindServer() {
-        sendMessage(new reqFindServer(Utility.getBroadcastIP(), PORT));
+        sendMessage(new reqFindServer(Utility.getBroadcastIP(), PORT,Utility.getLocalIP(),0));
         resFindServer = new Timer();
         resFindServer.schedule(new TimerTask() {
             @Override
@@ -283,12 +284,12 @@ class Client implements ChatProgramm {
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
-                        if (r.getSourceIP().toString().compareTo(lowestIP.toString()) == -1) {
+                        if (compare(r.getSourceIP(),lowestIP) == -1) {
                             lowestIP = r.getSourceIP();
                         }
                     }
                     display("Server found!");
-                    serverip = lowestIP.getHostAddress();
+                    serverip = lowestIP.toString();
                     clientGUI.setServerTextField(lowestIP.getHostAddress());
                 }
                 incomingResFindServer.clear();

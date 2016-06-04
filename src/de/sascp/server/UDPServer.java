@@ -50,8 +50,12 @@ public class UDPServer implements Runnable {
                 }
             }
 
-            if (parent.incomingMessageQueue.offer(new reqFindServer(((InetSocketAddress) packet.getSocketAddress()).getAddress(), (((InetSocketAddress) packet.getSocketAddress())
-                    .getPort())))) {
+            if (parent.incomingMessageQueue.offer(
+                    new reqFindServer(
+                            packet.getAddress(),
+                            packet.getPort(),
+                            ((InetSocketAddress) packet.getSocketAddress()).getAddress(),
+                            ((InetSocketAddress) packet.getSocketAddress()).getPort()))) {
                 parent.display("reqFindServer received and added to incoming Message Queue");
             } else {
                 parent.display("reqFindServer received and thrown away!");
