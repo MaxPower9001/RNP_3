@@ -65,6 +65,11 @@ class IncomingMessageHandler implements Runnable {
                     parent.display(sourceUserName + ": " + curMess.getMessage());
                     break;
                 }
+                case (ERRORMSGNOTDELIVERED): {
+                    errorMsgNotDelivered curMess = (errorMsgNotDelivered) currentMessage;
+                    parent.displayError(curMess.getMessageId());
+                    break;
+                }
                 default:
                     parent.display("Nothing found - I guess nobody wants to talk to you...");
                     break;

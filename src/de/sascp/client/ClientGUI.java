@@ -5,11 +5,15 @@ package de.sascp.client;
  */
 
 import de.sascp.server.Server;
+import de.sascp.util.Utility;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.InetAddress;
+import java.net.SocketException;
+import java.net.UnknownHostException;
 
 /*
  * The Client with its GUI
@@ -22,6 +26,7 @@ public class ClientGUI extends JFrame implements ActionListener {
     private final JTextField tf;
     // to hold the server address an the port number
     private final JTextField tfServer;
+    private final JTextField tfLocalhost;
     // to Logout and get the list of the users
     private final JButton findServer;
     private final JButton login;
@@ -41,15 +46,21 @@ public class ClientGUI extends JFrame implements ActionListener {
         defaultHost = "localhost";
 
         // The NorthPanel with:
-        JPanel northPanel = new JPanel(new GridLayout(3, 1));
+        JPanel northPanel = new JPanel(new GridLayout(3, 2));
         // the server name anmd the port number
-        JPanel serverAndPort = new JPanel(new GridLayout(1, 5, 1, 3));
+        JPanel serverAndPort = new JPanel(new GridLayout(2, 5, 1, 3));
         // the two JTextField with default value for server address and port number
         tfServer = new JTextField("");
         tfServer.setEnabled(false);
+        tfLocalhost = new JTextField("");
+        tfLocalhost.setEnabled(true);
+
 
         serverAndPort.add(new JLabel("Server Address:  "));
         serverAndPort.add(tfServer);
+        serverAndPort.add(new JLabel(" "));
+        serverAndPort.add(new JLabel("Local IP Adress:   "));
+        serverAndPort.add(tfLocalhost);
         JLabel serverAdress = new JLabel("");
         serverAndPort.add(serverAdress);
         // adds the Server an port field to the GUI
@@ -118,7 +129,8 @@ public class ClientGUI extends JFrame implements ActionListener {
         // reset host name as a construction reqLoginTimer
         tfServer.setText(defaultHost);
         // let the user change them
-        tfServer.setEditable(false);
+        tfServer.setEditable(true);
+        tfLocalhost.setEditable(true);
         // don't react to a <CR> after the username
         tf.removeActionListener(this);
         connected = false;
@@ -150,6 +162,13 @@ public class ClientGUI extends JFrame implements ActionListener {
         }
 
         if (o == findServer) {
+            try {
+                Utility.setBroadcastIP(InetAddress.getByName(tfLocalhost.getText()));
+            } catch (SocketException e1) {
+                e1.printStackTrace();
+            } catch (UnknownHostException e1) {
+                e1.printStackTrace();
+            }
             client.reqFindServer();
         }
 
@@ -177,6 +196,7 @@ public class ClientGUI extends JFrame implements ActionListener {
             whoIsIn.setEnabled(true);
             // disable the Server JTextField
             tfServer.setEditable(false);
+            tfLocalhost.setEditable(false);
             // Action listener for when the user enter a message
             tf.addActionListener(this);
         }

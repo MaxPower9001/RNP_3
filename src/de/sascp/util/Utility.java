@@ -1,6 +1,8 @@
 package de.sascp.util;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collections;
@@ -18,13 +20,24 @@ public class Utility {
     private static InetAddress broadcastIP;
     private static InetAddress localIP;
 
-    private static final boolean showAllNIC = false;
-
-    private static final String NIC = "eth1";
-
 
     public static InetAddress getBroadcastIP() {
         return broadcastIP;
+    }
+
+    public static void setBroadcastIP(InetAddress localIP) throws SocketException {
+        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+        for (NetworkInterface netint : Collections.list(nets)) {
+            Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+            for (InetAddress inetAddress : Collections.list(inetAddresses))
+                if (inetAddress.equals(localIP)) {
+                    localIP = inetAddress;
+                    broadcastIP = netint.getInterfaceAddresses().get(0).getBroadcast();
+                    out.println("Local IP: " + localIP);
+                    out.println("Broadcast IP: " + broadcastIP);
+                }
+        }
+        out.printf("\n");
     }
 
     public static InetAddress getLocalIP() {
@@ -67,7 +80,7 @@ public class Utility {
     }
 
     public static int getMessageId() {
-        return (int) Instant.now().getEpochSecond();
+        return (int) (Instant.now().getEpochSecond() / 1000L);
     }
 
     public static byte[] intPortToByteArray(int port) {
@@ -91,32 +104,6 @@ public class Utility {
         return returnValue;
     }
 
-    public static void main(String args[]) throws SocketException {
-        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-        for (NetworkInterface netint : Collections.list(nets)){
-            displayInterfaceInformation(netint);
-        }
-    }
-
-    static void displayInterfaceInformation(NetworkInterface netint) throws SocketException {
-        if(showAllNIC){
-            out.printf("Display name: %s\n", netint.getDisplayName());
-            out.printf("Name: %s\n", netint.getName());
-        }
-        Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
-        for (InetAddress inetAddress : Collections.list(inetAddresses)) {
-            if (showAllNIC) {
-                out.printf("InetAddress: %s\n", inetAddress);
-            }
-            if(netint.getName().equals(NIC) && inetAddress.getClass() == Inet4Address.class && !inetAddress.isLoopbackAddress()){
-                localIP = inetAddress;
-                broadcastIP = netint.getInterfaceAddresses().get(0).getBroadcast();
-                System.out.println("Local IP: " + localIP);
-                System.out.println("Broadcast IP: " + broadcastIP);
-            }
-        }
-        out.printf("\n");
-    }
     public static int compare(InetAddress adr1, InetAddress adr2) {
         byte[] ba1 = adr1.getAddress();
         byte[] ba2 = adr2.getAddress();

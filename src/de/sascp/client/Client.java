@@ -45,15 +45,19 @@ class Client implements ChatProgramm {
     private ClientProtocolParser clientProtocolParser;
     // List of all connected Clients in the current session
     private HashSet<ClientInformation> connectedClients;
+    private HashMap<Integer, String> sentMessages;
     private boolean[] hbReceived = {false};
     // The server ip and the client's username
     private String serverip;
     private String username;
+    private int messagecounter;
 
 
     public Client(ClientGUI clientGUI, Server server) {
+        messagecounter = 0;
         // Instantiate Lists and Queues
         connectedClients = new HashSet<>();
+        sentMessages = new HashMap<>();
         incomingResFindServer = new ConcurrentLinkedQueue<>();
         incomingMessageQueue = new LinkedBlockingQueue<>();
 
@@ -168,7 +172,7 @@ class Client implements ChatProgramm {
         for (ClientInformation clientInformation :
                 connectedClients) {
             int compVal = clientInformation.getClientIP().getHostAddress().compareTo(lowestIP.getHostAddress());
-            if (compVal == -1) {
+            if (compVal < 0) {
                 lowestIP = clientInformation.getClientIP();
                 lowestPort = clientInformation.getClientPort();
             } else if (compVal == 0) {
@@ -178,7 +182,9 @@ class Client implements ChatProgramm {
                 }
             }
         }
+        display("New Server will be: " + lowestIP + ":" + lowestPort);
         if (lowestIP.equals(myInformation.getClientIP()) && lowestPort == myInformation.getClientPort()) {
+            display("I am the new master!");
             startLocalServer();
         } else {
             try {
@@ -196,6 +202,7 @@ class Client implements ChatProgramm {
     // /w hans tolle nachricht
     void sendMsg(String message) {
         if(message.startsWith("/w")) {
+            messagecounter++;
             String target = message.split(" ")[1];
             ArrayList<String> messageText = new ArrayList<String>(Arrays.asList(message.split(" ")));
             messageText.remove(0);
@@ -210,13 +217,17 @@ class Client implements ChatProgramm {
                 if (client.getClientUsername().equals(target)) {
                     InetAddress targetIP = client.getClientIP();
                     int targetPort = client.getClientPort();
-                    MessageBuilder.buildMessage(new sendMsgUsr(targetIP, targetPort,socket.getLocalAddress(),socket.getLocalPort(),Utility.getMessageId(),actualMessage),sOutput);
+                    int messageID = messagecounter;
+                    sentMessages.put(messageID, actualMessage);
+                    MessageBuilder.buildMessage(new sendMsgUsr(targetIP, targetPort, socket.getLocalAddress(), socket.getLocalPort(), messageID, actualMessage), sOutput);
                     break;
+                } else {
+
                 }
             }
         }
         else {
-            MessageBuilder.buildMessage(new sendMsgGrp(Utility.getBroadcastIP(), 0,socket.getLocalAddress(),socket.getLocalPort(),Utility.getMessageId(),message),sOutput);
+            MessageBuilder.buildMessage(new sendMsgGrp(Utility.getBroadcastIP(), 0, socket.getLocalAddress(), socket.getLocalPort(), messagecounter, message), sOutput);
         }
     }
 
@@ -289,7 +300,7 @@ class Client implements ChatProgramm {
                         }
                     }
                     display("Server found!");
-                    serverip = lowestIP.toString();
+                    serverip = lowestIP.getHostAddress();
                     clientGUI.setServerTextField(lowestIP.getHostAddress());
                 }
                 incomingResFindServer.clear();
@@ -333,6 +344,12 @@ class Client implements ChatProgramm {
 
     public boolean[] getHbReceived() {
         return hbReceived;
+    }
+
+    public void displayError(int messageId) {
+        display("NACHRICHT MIT ID {" + messageId + "} NICHT GESENDET:");
+        display(sentMessages.get(new Integer(messageId)));
+        display("====================================================");
     }
 }
 

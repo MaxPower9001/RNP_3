@@ -6,7 +6,10 @@ import de.sascp.message.subTypes.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -192,6 +195,36 @@ public class MessageBuilder {
             messageToBeSent = concat(messageToBeSent,recordReserved);
             messageToBeSent = concat(messageToBeSent,recordUsername);
         }
+
+        try {
+            outputStream.write(messageToBeSent);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    public static boolean buildMessage(errorMsgNotDelivered errMessage, OutputStream outputStream) {
+        byte[] messageToBeSent = concat(new byte[0], buildCommonHeader(errMessage));
+
+        byte[] messageID = new byte[4];
+        byte[] sourceIP;
+        byte[] targetIP;
+        byte[] sourcePort;
+        byte[] targetPort;
+
+        messageID[0] = (byte) errMessage.getMessageId();
+        sourceIP = errMessage.getSourceIP().getAddress();
+        targetIP = errMessage.getTargetIP().getAddress();
+        sourcePort = intPortToByteArray(errMessage.getSourcePort());
+        targetPort = intPortToByteArray(errMessage.getTargetPort());
+
+        messageToBeSent = concat(messageToBeSent, messageID);
+        messageToBeSent = concat(messageToBeSent, sourceIP);
+        messageToBeSent = concat(messageToBeSent, targetIP);
+        messageToBeSent = concat(messageToBeSent, sourcePort);
+        messageToBeSent = concat(messageToBeSent, targetPort);
 
         try {
             outputStream.write(messageToBeSent);

@@ -1,10 +1,7 @@
 package de.sascp.client;
 
 import de.sascp.message.ChatMessage;
-import de.sascp.message.subTypes.resHeartbeat;
-import de.sascp.message.subTypes.sendMsgGrp;
-import de.sascp.message.subTypes.sendMsgUsr;
-import de.sascp.message.subTypes.updateClient;
+import de.sascp.message.subTypes.*;
 import de.sascp.util.MessageBuilder;
 import de.sascp.util.Utility;
 
@@ -179,6 +176,21 @@ class ClientProtocolParser implements Runnable {
 
                                 ChatMessage message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort, grpTextMessageId, usrTextMessage);
                                 message.setPayload(msgText);
+                                parent.incomingMessageQueue.offer(message);
+                            } catch (UnknownHostException e) {
+                                e.printStackTrace();
+                            }
+                            break;
+                        }
+                        case (ERRORMSGNOTDELIVERED): {
+                            int usrTextMessageId = Utility.intFromFourBytes(payload, 0, 4);
+                            try {
+                                InetAddress sourceIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload, 4, 4));
+                                InetAddress targetIp = InetAddress.getByAddress(Utility.getByteArrayFragment(payload, 8, 4));
+                                int sourcePort = Utility.intFromTwoBytes(payload, 12);
+                                int targetPort = Utility.intFromTwoBytes(payload, 14);
+
+                                errorMsgNotDelivered message = new errorMsgNotDelivered(targetIp, targetPort, sourceIp, sourcePort, usrTextMessageId);
                                 parent.incomingMessageQueue.offer(message);
                             } catch (UnknownHostException e) {
                                 e.printStackTrace();
