@@ -1,0 +1,11 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="rnp">
+    <output-path>$PROJECT_DIR$/out/artifacts/rnp</output-path>
+    <root id="archive" name="rnp.jar">
+      <element id="directory" name="META-INF">
+        <element id="file-copy" path="$PROJECT_DIR$/META-INF/MANIFEST.MF" />
+      </element>
+      <element id="module-output" name="RNP_3" />
+    </root>
+  </artifact>
+</component>

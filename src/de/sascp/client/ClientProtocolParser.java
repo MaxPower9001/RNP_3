@@ -168,13 +168,13 @@ class ClientProtocolParser implements Runnable {
                             int grpTextMessageId = Utility.intFromFourBytes(payload, 0, 4);
                             try {
                                 InetAddress sourceIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload, 4, 4));
-                                InetAddress targetIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload, 8, 4));
+                                //InetAddress targetIp = Inet4Address.getByAddress(Utility.getByteArrayFragment(payload, 8, 4));
                                 int sourcePort = Utility.intFromTwoBytes(payload, 12);
-                                int targetPort = Utility.intFromTwoBytes(payload, 14);
+                                //int targetPort = Utility.intFromTwoBytes(payload, 14);
                                 byte[] msgText = Utility.getByteArrayFragment(payload, 16, payload.length - 16);
                                 String usrTextMessage = new String(msgText, Charset.forName(CHARSET));
 
-                                ChatMessage message = new sendMsgGrp(targetIp, targetPort, sourceIp, sourcePort, grpTextMessageId, usrTextMessage);
+                                ChatMessage message = new sendMsgGrp(null, 0, sourceIp, sourcePort, grpTextMessageId, usrTextMessage);
                                 message.setPayload(msgText);
                                 parent.incomingMessageQueue.offer(message);
                             } catch (UnknownHostException e) {

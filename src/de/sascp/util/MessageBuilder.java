@@ -6,10 +6,7 @@ import de.sascp.message.subTypes.*;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -29,7 +26,12 @@ public class MessageBuilder {
     public static boolean buildMessage(reqFindServer chatMessage, ConcurrentLinkedQueue incomingMessageQueue) {
         byte[] outgoingMessage = buildCommonHeader(chatMessage);
 
-        DatagramPacket outgoingPacket = new DatagramPacket(outgoingMessage, outgoingMessage.length, Utility.getBroadcastIP(), PORT);
+        DatagramPacket outgoingPacket = null;
+        try {
+            outgoingPacket = new DatagramPacket(outgoingMessage, outgoingMessage.length, InetAddress.getByName("255.255.255.255"), PORT);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
         DatagramPacket incomingPacket = new DatagramPacket(new byte[CHLENGTH], CHLENGTH);
         DatagramSocket toSocket;
         try {

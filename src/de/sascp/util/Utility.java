@@ -1,12 +1,12 @@
 package de.sascp.util;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.List;
 
 import static de.sascp.protocol.Specification.*;
 import static java.lang.System.out;
@@ -22,23 +22,31 @@ public class Utility {
 
 
     public static InetAddress getBroadcastIP() {
+        try {
+            broadcastIP = InetAddress.getByName("255.255.255.255");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+
         return broadcastIP;
     }
 
-    public static void setBroadcastIP(InetAddress localIP) throws SocketException {
-        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-        for (NetworkInterface netint : Collections.list(nets)) {
-            Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
-            for (InetAddress inetAddress : Collections.list(inetAddresses))
-                if (inetAddress.equals(localIP)) {
-                    localIP = inetAddress;
-                    broadcastIP = netint.getInterfaceAddresses().get(0).getBroadcast();
-                    out.println("Local IP: " + localIP);
-                    out.println("Broadcast IP: " + broadcastIP);
-                }
-        }
-        out.printf("\n");
-    }
+//    public static void setBroadcastIP(InetAddress localIP) throws SocketException {
+//        Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+//        for (NetworkInterface netint : Collections.list(nets)) {
+//            Enumeration<InetAddress> inetAddresses = netint.getInetAddresses();
+//            for (InetAddress inetAddress : Collections.list(inetAddresses))
+//                if (inetAddress.equals(localIP)) {
+//                    localIP = inetAddress;
+//                    //List<InterfaceAddress> ad = netint.getInterfaceAddresses();
+//                    broadcastIP = netint.getInterfaceAddresses().get(1).getBroadcast();
+//                    out.println("Local IP: " + localIP);
+//                    out.println("Broadcast IP: " + broadcastIP);
+//                }
+//        }
+//        out.printf("\n");
+//    }
 
     public static InetAddress getLocalIP() {
         return localIP;

@@ -51,12 +51,12 @@ public class ServerGUI extends JFrame implements WindowListener {
     // position at the end
     void appendRoom(String str) {
         chat.append(str);
-        chat.setCaretPosition(chat.getText().length() - 1);
+        //chat.setCaretPosition(chat.getText().length() - 1);
     }
 
     void appendEvent(String str) {
         event.append(str);
-        event.setCaretPosition(event.getText().length() - 1);
+        //event.setCaretPosition(event.getText().length() - 1);
 
     }
 

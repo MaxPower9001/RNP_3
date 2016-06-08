@@ -46,36 +46,7 @@ class ServerUnit implements Runnable {
                             targetOutputStream = clientConnection.sOutput;
                         }
                     }
-                    if (targetStillInClientList) { // target found, relay message to target
-                        buildMessage((sendMsgUsr) currentMessage, targetOutputStream);
-                        for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                            if (clientConnection.socket.getInetAddress().equals(currentMessage.getSourceIP()) &&
-                                    clientConnection.socket.getPort() == (currentMessage.getSourcePort())) {
-                                targetOutputStream = clientConnection.sOutput;
-                            }
-                        }
-                        errorMsgNotDelivered errMsg = new errorMsgNotDelivered(
-                                currentMessage.getTargetIP(),
-                                currentMessage.getTargetPort(),
-                                currentMessage.getSourceIP(),
-                                currentMessage.getTargetPort(),
-                                ((sendMsgUsr) currentMessage).getMessageId());
-                        buildMessage(errMsg, targetOutputStream);
-                    } else {
-                        for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                            if (clientConnection.socket.getInetAddress().equals(currentMessage.getSourceIP()) &&
-                                    clientConnection.socket.getPort() == (currentMessage.getSourcePort())) {
-                                targetOutputStream = clientConnection.sOutput;
-                            }
-                        }
-                        errorMsgNotDelivered errMsg = new errorMsgNotDelivered(
-                                currentMessage.getTargetIP(),
-                                currentMessage.getTargetPort(),
-                                currentMessage.getSourceIP(),
-                                currentMessage.getTargetPort(),
-                                ((sendMsgUsr) currentMessage).getMessageId());
-                        buildMessage(errMsg, targetOutputStream);
-                    }
+                    buildMessage((sendMsgUsr) currentMessage, targetOutputStream);
                     break;
                 case (SENDMSGGRP):
                     for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {

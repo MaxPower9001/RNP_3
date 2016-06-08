@@ -135,15 +135,15 @@ class Client implements ChatProgramm {
         reqLoginTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (connectedClients.isEmpty() || !findOwnUsername()) {
-                    display("Bad Login - maybe try another Username");
-                    checkHB.cancel();
-                    clientGUI.connectionFailed();
-                } else {
+//                if (connectedClients.isEmpty()/* || !findOwnUsername()*/) {
+//                    display("Bad Login - maybe try another Username");
+//                    checkHB.cancel();
+//                    clientGUI.connectionFailed();
+//                } else {
                     display("Logged in - you did it!");
                     clientGUI.clearText();
-                    startHeartbeatTimer();
-                }
+                    //startHeartbeatTimer();
+//                }
             }
         }, TIMEOUT);
     }
@@ -295,7 +295,7 @@ class Client implements ChatProgramm {
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
-                        if (compare(r.getSourceIP(),lowestIP) == -1) {
+                        if (r.getSourceIP().getHostAddress().compareTo(lowestIP.getHostAddress()) < 0  ) {
                             lowestIP = r.getSourceIP();
                         }
                     }
