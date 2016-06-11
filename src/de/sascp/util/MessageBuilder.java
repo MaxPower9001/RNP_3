@@ -1,5 +1,7 @@
 package de.sascp.util;
 
+import com.sun.nio.sctp.MessageInfo;
+import com.sun.nio.sctp.SctpChannel;
 import de.sascp.client.ClientInformation;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.*;
@@ -87,7 +89,7 @@ public class MessageBuilder {
         return true;
     }
 
-    public static boolean buildMessage(sendMsgUsr sendMsgUsr, OutputStream outputStream) {
+    public static boolean buildMessage(sendMsgUsr sendMsgUsr, SctpChannel channel) {
         byte[] usrTextMessage = sendMsgUsr.getMessage().getBytes();
         byte[] usrTextMessageId = Utility.intToByteArray(sendMsgUsr.getMessageId());
         byte[] sourceIp = sendMsgUsr.getSourceIP().getAddress();
@@ -102,16 +104,11 @@ public class MessageBuilder {
         messageToBeSent = concat(messageToBeSent,sourcePort);
         messageToBeSent = concat(messageToBeSent,targetPort);
         messageToBeSent = concat(messageToBeSent,usrTextMessage);
-
-        try {
-            outputStream.write(messageToBeSent);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendMessage(messageToBeSent, channel);
         return true;
     }
 
-    public static boolean buildMessage(sendMsgGrp sendMsgGrp, OutputStream outputStream) {
+    public static boolean buildMessage(sendMsgGrp sendMsgGrp, SctpChannel channel) {
         byte[] usrTextMessage = sendMsgGrp.getMessage().getBytes();
         byte[] usrTextMessageId = Utility.intToByteArray(sendMsgGrp.getMessageId());
         byte[] sourceIp = sendMsgGrp.getSourceIP().getAddress();
@@ -127,31 +124,22 @@ public class MessageBuilder {
         messageToBeSent = concat(messageToBeSent,targetPort);
         messageToBeSent = concat(messageToBeSent,usrTextMessage);
 
-        try {
-            outputStream.write(messageToBeSent);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendMessage(messageToBeSent, channel);
         return true;
     }
 
-    public static boolean buildMessage(reqHeartbeat reqHeartbeat, OutputStream outputStream) throws IOException {
+    public static boolean buildMessage(reqHeartbeat reqHeartbeat, SctpChannel channel) {
         byte[] outgoingMessage = buildCommonHeader(reqHeartbeat);
-        outputStream.write(outgoingMessage);
-
+        sendMessage(outgoingMessage, channel);
         return true;
     }
-    public static boolean buildMessage(resHeartbeat resHeartbeat, OutputStream outputStream) {
+    public static boolean buildMessage(resHeartbeat resHeartbeat, SctpChannel channel) {
         byte[] outgoingMessage = buildCommonHeader(resHeartbeat);
-        try {
-            outputStream.write(outgoingMessage);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendMessage(outgoingMessage, channel);
         return true;
     }
 
-    public static boolean buildMessage(reqLogin chatMessage, OutputStream outputStream) {
+    public static boolean buildMessage(reqLogin chatMessage, SctpChannel channel) {
         byte[] outgoingMessage = buildCommonHeader(chatMessage);
 
         byte[] username = chatMessage.getUsername().getBytes(Charset.forName(CHARSET));
@@ -161,16 +149,12 @@ public class MessageBuilder {
         System.arraycopy(outgoingMessage, 0, combined, 0, outgoingMessage.length);
         System.arraycopy(username, 0, combined, outgoingMessage.length, username.length);
 
-        try {
-            outputStream.write(combined);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendMessage(combined, channel);
 
         return false;
     }
 
-    public static boolean buildMessage(updateClient chatMessage, OutputStream outputStream) {
+    public static boolean buildMessage(updateClient chatMessage, SctpChannel channel) {
         byte[] messageToBeSent = concat(new byte[0],buildCommonHeader(chatMessage));
         for (ClientInformation clientInformation : chatMessage.getClientInformation()) {
             byte[] recordIP;
@@ -196,16 +180,12 @@ public class MessageBuilder {
             messageToBeSent = concat(messageToBeSent,recordUsername);
         }
 
-        try {
-            outputStream.write(messageToBeSent);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        sendMessage(messageToBeSent, channel);
 
         return false;
     }
 
-    public static boolean buildMessage(errorMsgNotDelivered errMessage, OutputStream outputStream) {
+    public static boolean buildMessage(errorMsgNotDelivered errMessage, SctpChannel channel) {
         byte[] messageToBeSent = concat(new byte[0], buildCommonHeader(errMessage));
 
         byte[] messageID = new byte[4];
@@ -226,13 +206,23 @@ public class MessageBuilder {
         messageToBeSent = concat(messageToBeSent, sourcePort);
         messageToBeSent = concat(messageToBeSent, targetPort);
 
+        sendMessage(messageToBeSent, channel);
+
+        return false;
+    }
+
+    private static void sendMessage(byte[] messageToBeSent, SctpChannel channel) {
+        ByteBuffer buf = ByteBuffer.allocate(messageToBeSent.length);
+        buf.clear();
+        buf.put(messageToBeSent);
+        buf.flip();
         try {
-            outputStream.write(messageToBeSent);
+            while(buf.hasRemaining()) {
+                channel.send(buf, MessageInfo.createOutgoing(null, 0));
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        return false;
     }
 
     private static byte[] buildCommonHeader(ChatMessage chatMessage) {

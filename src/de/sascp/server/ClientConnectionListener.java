@@ -1,6 +1,7 @@
 package de.sascp.server;
 
 
+import com.sun.nio.sctp.SctpChannel;
 import de.sascp.message.subTypes.reqHeartbeat;
 import de.sascp.message.subTypes.reqLogin;
 import de.sascp.message.subTypes.sendMsgGrp;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,12 +26,13 @@ import static de.sascp.util.Utility.*;
  */
 class ClientConnectionListener implements Runnable {
     // the socket where to listen/talk
-    final Socket socket;
+    //final Socket socket;
+    SctpChannel channel;
     // my unique id (easier for deconnection)
     final int id;
     private final Server parent;
-    InputStream sInput;
-    OutputStream sOutput;
+    //InputStream sInput;
+    //OutputStream sOutput;
     // the Username of the Client
     String username = "";
     Timer sendHB;
@@ -41,19 +44,19 @@ class ClientConnectionListener implements Runnable {
 
 
     // Constructore
-    ClientConnectionListener(Socket socket, Server parent) {
-        InetAddress targetIP = socket.getInetAddress();
-        InetAddress sourceIP = socket.getLocalAddress();
-        int targetPort = socket.getPort();
-        int sourcePort = socket.getLocalPort();
+    ClientConnectionListener(SctpChannel channel, Server parent) {
+        InetAddress targetIP = Utility.getRemoteAddress(channel);
+        InetAddress sourceIP = Utility.getLocalAddress(channel);
+        int targetPort = Utility.getRemotePort(channel);
+        int sourcePort = Utility.getLocalPort(channel);
 
         reqHeartbeat = new reqHeartbeat(targetIP, targetPort, sourceIP, sourcePort);
         this.parent = parent;
         // a unique id
         id = ++Server.uniqueId;
-        this.socket = socket;
+        this.channel = channel;
             /* Creating both Data Stream */
-        System.out.println("Thread trying to create Object Input/Output Streams");
+/*        System.out.println("Thread trying to create Object Input/Output Streams");
         try {
             // create output first
             sOutput = socket.getOutputStream();
@@ -61,22 +64,22 @@ class ClientConnectionListener implements Runnable {
         } catch (IOException e) {
             parent.display("Exception creating new Input/output Streams: " + e);
             return;
-        }
+        }*/
     }
 
-    private void startSendCheckHB(final Socket socket, final Server parent, final reqHeartbeat reqHeartbeat) {
+    private void startSendCheckHB(final SctpChannel channel, final Server parent, final reqHeartbeat reqHeartbeat) {
         sendHB = new Timer("sendHBCCL");
         sendHB.schedule(new TimerTask() {
             @Override
             public void run() {
-                try {
-                    MessageBuilder.buildMessage(reqHeartbeat, sOutput);
-                } catch (SocketException e) {
-                    parent.display("Heartbeat failed to: " + socket.getInetAddress() + ":" + socket.getPort());
-                    sendHB.cancel();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+//                try {
+                    MessageBuilder.buildMessage(reqHeartbeat, channel);
+//                } catch (SocketException e) {
+//                    parent.display("Heartbeat failed to: " + Utility.getRemoteAddress(channel) + ":" + Utility.getRemotePort(channel));
+//                    sendHB.cancel();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
             }
         }, 0, 1000);
         checkHB = new Timer("checkHBCCL");
@@ -114,7 +117,12 @@ class ClientConnectionListener implements Runnable {
             while (lookingForCommonHeader) {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
-                    sInput.read(headerBytes);
+                    ByteBuffer headerByteBuffer = ByteBuffer.allocate(headerBytes.length);
+                    headerByteBuffer.clear();
+                    System.out.println(channel.receive(headerByteBuffer, null, null));
+                    headerByteBuffer.flip();
+                    headerByteBuffer.get(headerBytes);
+                    //sInput.read(headerBytes);
                 } catch (IOException e) {
                     // TODO connection failed
                     break;
@@ -129,12 +137,17 @@ class ClientConnectionListener implements Runnable {
                 }
             }
             while (lookingForPayload) {
+                ByteBuffer buff;
                 if (messageType == UPDATECLIENT) {
                     // TODO Updateclient List einlesen bitte danke
                 } else if (length >= 0) {
                     byte[] payload = new byte[length];
                     try {
-                        sInput.read(payload);
+                        buff = ByteBuffer.allocate(payload.length);
+                        channel.receive(buff, null, null);
+                        buff.flip();
+                        buff.get(payload);
+                        //sInput.read(payload);
                     } catch (IOException e) {
                         // TODO connection failed
                         break;
@@ -143,15 +156,15 @@ class ClientConnectionListener implements Runnable {
                         case (REQLOGIN):
                             this.username = new String(payload, Charset.forName(CHARSET));
                             if (username.length() == 0 || parent.getListenerHashMap().containsKey(username)) {
-                                parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
+                                parent.display("Login Request from: " + Utility.getRemoteAddress(channel).getHostAddress() + ":" + Utility.getRemotePort(channel) + " -> " + username);
                                 parent.display("But his username was already taken - poor fella...");
                                 this.username = null;
                             } else {
                                 parent.getListenerHashMap().put(username, this);
                                 parent.display(username + " added to Clients");
-                                if (parent.incomingMessageQueue.offer(new reqLogin(socket.getInetAddress(), username, socket.getPort()))) {
-                                    parent.display("Login Request from: " + socket.getInetAddress().getHostAddress() + ":" + socket.getPort() + " -> " + username);
-                                    startSendCheckHB(socket,parent,reqHeartbeat);
+                                if (parent.incomingMessageQueue.offer(new reqLogin(Utility.getRemoteAddress(channel), username, Utility.getRemotePort(channel)))) {
+                                    parent.display("Login Request from: " + Utility.getRemoteAddress(channel).getHostAddress() + ":" + Utility.getRemotePort(channel) + " -> " + username);
+                                    startSendCheckHB(channel,parent,reqHeartbeat);
                                 } else {
                                     parent.display("I was not able to put reqLogin into incoming message queue - forigve me senpai!");
                                 }
@@ -188,8 +201,8 @@ class ClientConnectionListener implements Runnable {
                             }
                             break;
                         case (RESHEARTBEAT):
-                            InetAddress sourceIP = socket.getInetAddress();
-                            int sourcePort = socket.getPort();
+                            InetAddress sourceIP = Utility.getRemoteAddress(channel);
+                            int sourcePort = Utility.getRemotePort(channel);
                             parent.display("resHeartbeat: " + sourceIP + "|" + sourcePort);
                             hbReceived[0] = true;
                             break;
@@ -206,16 +219,16 @@ class ClientConnectionListener implements Runnable {
     // try to close everything
     private void close() {
         // try to close the connection
-        try {
+/*        try {
             if (sOutput != null) sOutput.close();
         } catch (Exception e) {
         }
         try {
             if (sInput != null) sInput.close();
         } catch (Exception e) {
-        }
+        }*/
         try {
-            if (socket != null) socket.close();
+            if (channel != null) channel.close();
         } catch (Exception e) {
         }
     }

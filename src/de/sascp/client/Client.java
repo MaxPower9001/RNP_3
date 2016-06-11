@@ -1,5 +1,6 @@
 package de.sascp.client;
 
+import com.sun.nio.sctp.SctpChannel;
 import de.sascp.marker.ChatProgramm;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.*;
@@ -11,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.time.Instant;
@@ -32,9 +34,10 @@ class Client implements ChatProgramm {
     private final Server server;
     long uniqueID = Instant.EPOCH.getEpochSecond();
     // for I/O
-    Socket socket;
-    InputStream sInput;
-    OutputStream sOutput;
+    SctpChannel channel;
+    //Socket socket;
+    //InputStream sInput;
+    //OutputStream sOutput;
     // Timer and boolean for heartbeat
     Timer checkHB;
     Timer reqLoginTimer;
@@ -86,23 +89,25 @@ class Client implements ChatProgramm {
      * <p>- reqLogin function returns with false</p>
      */
     boolean start() {
-        if (socket == null || socket.isClosed()) {
+        if (channel == null || !channel.isOpen()) {
             // establishing socket to server for TCP communication
             try {
-                socket = new Socket(serverip, PORT);
+                channel = SctpChannel.open();
+                channel.connect(new InetSocketAddress(serverip, PORT));
+                //socket = new Socket(serverip, PORT);
             } catch (Exception ec) {
                 display("Error connectiong to serverip:" + ec);
                 return false;
             }
 
 		/* Creating both Data Streams */
-            try {
-                sInput = socket.getInputStream();
+/*            try {
+                //sInput = socket.getInputStream();
                 sOutput = socket.getOutputStream();
             } catch (IOException eIO) {
                 display("Exception creating new Input/output Streams: " + eIO);
                 return false;
-            }
+            }*/
 
             // Create and start Threads for IMH and PP
             incomingMessageHandler = new IncomingMessageHandler(this);
@@ -130,7 +135,7 @@ class Client implements ChatProgramm {
         } catch (UnknownHostException e) {
             display("Unable to resolve Server IP");
         }
-        MessageBuilder.buildMessage(loginMessage, sOutput);
+        MessageBuilder.buildMessage(loginMessage, channel);
         reqLoginTimer = new Timer();
         reqLoginTimer.schedule(new TimerTask() {
             @Override
@@ -219,7 +224,7 @@ class Client implements ChatProgramm {
                     int targetPort = client.getClientPort();
                     int messageID = messagecounter;
                     sentMessages.put(messageID, actualMessage);
-                    MessageBuilder.buildMessage(new sendMsgUsr(targetIP, targetPort, socket.getLocalAddress(), socket.getLocalPort(), messageID, actualMessage), sOutput);
+                    MessageBuilder.buildMessage(new sendMsgUsr(targetIP, targetPort, Utility.getLocalAddress(channel), Utility.getLocalPort(channel), messageID, actualMessage), channel);
                     break;
                 } else {
 
@@ -227,15 +232,15 @@ class Client implements ChatProgramm {
             }
         }
         else {
-            MessageBuilder.buildMessage(new sendMsgGrp(Utility.getBroadcastIP(), 0, socket.getLocalAddress(), socket.getLocalPort(), messagecounter, message), sOutput);
+            MessageBuilder.buildMessage(new sendMsgGrp(Utility.getBroadcastIP(), 0, Utility.getLocalAddress(channel), Utility.getLocalPort(channel), messagecounter, message), channel);
         }
     }
 
     private boolean findOwnUsername() {
         for (ClientInformation clientInformation : connectedClients) {
             if (
-                    clientInformation.getClientIP().equals(socket.getLocalAddress()) &&
-                            clientInformation.getClientPort() == socket.getLocalPort()) {
+                    clientInformation.getClientIP().equals(Utility.getLocalAddress(channel)) &&
+                            clientInformation.getClientPort() == Utility.getLocalPort(channel)) {
                 myInformation = clientInformation;
                 return true;
             }
@@ -267,16 +272,9 @@ class Client implements ChatProgramm {
     private void disconnect() {
         incomingMessageHandler.stopRunning();
         try {
-            if (sInput != null) sInput.close();
+            if (channel != null) channel.close();
         } catch (Exception e) {
-        } // not much else I can do
-        try {
-            if (sOutput != null) sOutput.close();
-        } catch (Exception e) {
-        } // not much else I can do
-        try {
-            if (socket != null) socket.close();
-        } catch (Exception e) {
+
         } // not much else I can do
 
         // inform the GUI
@@ -295,7 +293,7 @@ class Client implements ChatProgramm {
                 } else {
                     InetAddress lowestIP = Utility.getBroadcastIP();
                     for (resFindServer r : incomingResFindServer) {
-                        if (compare(r.getSourceIP(),lowestIP) == -1) {
+                        if (r.getSourceIP().getHostAddress().compareTo(lowestIP.getHostAddress()) < 0) {
                             lowestIP = r.getSourceIP();
                         }
                     }

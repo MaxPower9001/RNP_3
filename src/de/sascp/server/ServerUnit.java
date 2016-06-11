@@ -1,7 +1,9 @@
 package de.sascp.server;
 
+import com.sun.nio.sctp.SctpChannel;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.*;
+import de.sascp.util.Utility;
 
 import java.io.OutputStream;
 
@@ -38,34 +40,27 @@ class ServerUnit implements Runnable {
                     break;
                 case (SENDMSGUSR):
                     boolean targetStillInClientList = false;
-                    OutputStream targetOutputStream = null;
+                    SctpChannel targetChannel = null;
                     for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                        if (clientConnection.socket.getInetAddress().equals(currentMessage.getTargetIP()) &&
-                                clientConnection.socket.getPort() == (currentMessage.getTargetPort())) {
+                        if (Utility.getRemoteAddress(clientConnection.channel).equals(currentMessage.getTargetIP()) &&
+                                Utility.getRemotePort(clientConnection.channel) == (currentMessage.getTargetPort())) {
                             targetStillInClientList = true;
-                            targetOutputStream = clientConnection.sOutput;
+                            targetChannel = clientConnection.channel;
                         }
                     }
                     if (targetStillInClientList) { // target found, relay message to target
-                        buildMessage((sendMsgUsr) currentMessage, targetOutputStream);
+                        buildMessage((sendMsgUsr) currentMessage, targetChannel);
                         for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                            if (clientConnection.socket.getInetAddress().equals(currentMessage.getSourceIP()) &&
-                                    clientConnection.socket.getPort() == (currentMessage.getSourcePort())) {
-                                targetOutputStream = clientConnection.sOutput;
+                            if (Utility.getRemoteAddress(clientConnection.channel).equals(currentMessage.getSourceIP()) &&
+                                    Utility.getRemotePort(clientConnection.channel) == (currentMessage.getSourcePort())) {
+                                targetChannel = clientConnection.channel;
                             }
                         }
-                        errorMsgNotDelivered errMsg = new errorMsgNotDelivered(
-                                currentMessage.getTargetIP(),
-                                currentMessage.getTargetPort(),
-                                currentMessage.getSourceIP(),
-                                currentMessage.getTargetPort(),
-                                ((sendMsgUsr) currentMessage).getMessageId());
-                        buildMessage(errMsg, targetOutputStream);
                     } else {
                         for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
-                            if (clientConnection.socket.getInetAddress().equals(currentMessage.getSourceIP()) &&
-                                    clientConnection.socket.getPort() == (currentMessage.getSourcePort())) {
-                                targetOutputStream = clientConnection.sOutput;
+                            if (Utility.getRemoteAddress(clientConnection.channel).equals(currentMessage.getSourceIP()) &&
+                                    Utility.getRemotePort(clientConnection.channel) == (currentMessage.getSourcePort())) {
+                                targetChannel = clientConnection.channel;
                             }
                         }
                         errorMsgNotDelivered errMsg = new errorMsgNotDelivered(
@@ -74,13 +69,13 @@ class ServerUnit implements Runnable {
                                 currentMessage.getSourceIP(),
                                 currentMessage.getTargetPort(),
                                 ((sendMsgUsr) currentMessage).getMessageId());
-                        buildMessage(errMsg, targetOutputStream);
+                        buildMessage(errMsg, targetChannel);
                     }
                     break;
                 case (SENDMSGGRP):
                     for (ClientConnectionListener clientConnection : parent.getListenerHashMap().values()) {
                         sendMsgGrp messageToBeSent = (sendMsgGrp) currentMessage;
-                        buildMessage(messageToBeSent, clientConnection.sOutput);
+                        buildMessage(messageToBeSent, clientConnection.channel);
                     }
                     break;
                 default:
@@ -92,8 +87,8 @@ class ServerUnit implements Runnable {
 
     public void doUpdateClients() {
         for (ClientConnectionListener ccl : parent.getListenerHashMap().values()) {
-            updateClient updateClient = new updateClient(ccl.socket.getInetAddress(), ccl.socket.getPort(), parent.getConnectedClients());
-            buildMessage(updateClient, ccl.sOutput);
+            updateClient updateClient = new updateClient(Utility.getRemoteAddress(ccl.channel), Utility.getRemotePort(ccl.channel), parent.getConnectedClients());
+            buildMessage(updateClient, ccl.channel);
         }
     }
 

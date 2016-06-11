@@ -1,12 +1,14 @@
 package de.sascp.util;
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import com.sun.nio.sctp.SctpChannel;
+
+import java.io.IOException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.Enumeration;
+import java.util.Set;
 
 import static de.sascp.protocol.Specification.*;
 import static java.lang.System.out;
@@ -17,11 +19,101 @@ import static java.lang.System.out;
 public class Utility {
     public static final int OHSHIT = -9001;
     public static final int CHLENGTH = 12;
+    private static  String networkMatchingPattern = "127.0.0.";
     private static InetAddress broadcastIP;
     private static InetAddress localIP;
 
+    public static void setNetworkMatchingPattern(InetAddress ip) {
+        networkMatchingPattern = ip.getHostAddress().replaceAll(".*(\\d+\\.\\d+\\.\\d+\\.).*", "$1");
+    }
+
+    public static String getNetworkMatchingPattern() {
+        return networkMatchingPattern;
+    }
+
+    public static InetAddress getLocalAddress(SctpChannel sctpChannel) {
+        InetAddress localAdress = null;
+        try {
+            for(SocketAddress address : sctpChannel.getAllLocalAddresses()) {
+                if (address instanceof InetSocketAddress) { // we only care for IP addresses
+                    InetSocketAddress inetsocketaddr = (InetSocketAddress) address;
+                    if (inetsocketaddr.getAddress().getHostAddress().contains(getNetworkMatchingPattern())) {
+                        // get only the IPv4 address that we care about (IP that's in our used network)
+                        localAdress = inetsocketaddr.getAddress();
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return localAdress;
+    }
+
+    public static InetAddress getRemoteAddress(SctpChannel sctpChannel) {
+        InetAddress remoteAddress = null;
+        try {
+            for(SocketAddress address : sctpChannel.getRemoteAddresses()) {
+                if (address instanceof InetSocketAddress) { // we only care for IP addresses
+                    InetSocketAddress inetsocketaddr = (InetSocketAddress) address;
+                    if (inetsocketaddr.getAddress().getHostAddress().contains(getNetworkMatchingPattern())) {
+                        // get only the IPv4 address that we care about (IP that's in our used network)
+                        remoteAddress = inetsocketaddr.getAddress();
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return remoteAddress;
+    }
+
+    public static int getRemotePort(SctpChannel sctpChannel) {
+        int remotePort = 0;
+        try {
+            for(SocketAddress address : sctpChannel.getRemoteAddresses()) {
+                if (address instanceof InetSocketAddress) { // we only care for IP addresses
+                    InetSocketAddress inetsocketaddr = (InetSocketAddress) address;
+                    if (inetsocketaddr.getAddress().getHostAddress().contains(getNetworkMatchingPattern())) {
+                        // get only the IPv4 address that we care about (IP that's in our used network)
+                        remotePort = inetsocketaddr.getPort();
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return remotePort;
+    }
+
+    public static int getLocalPort(SctpChannel sctpChannel) {
+        int localPort = 0;
+        try {
+            for(SocketAddress address : sctpChannel.getRemoteAddresses()) {
+                if (address instanceof InetSocketAddress) { // we only care for IP addresses
+                    InetSocketAddress inetsocketaddr = (InetSocketAddress) address;
+                    if (inetsocketaddr.getAddress().getHostAddress().contains(getNetworkMatchingPattern())) {
+                        // get only the IPv4 address that we care about (IP that's in our used network)
+                        localPort = inetsocketaddr.getPort();
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return localPort;
+    }
 
     public static InetAddress getBroadcastIP() {
+        // Workaround weil setBroadcastIP wohl nicht so funktioninert wie es soll
+        try {
+            broadcastIP = InetAddress.getByName("255.255.255.255");
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
         return broadcastIP;
     }
 
@@ -125,6 +217,8 @@ public class Utility {
         }
         return 0;
     }
+
+
 
     private static int unsignedByteToInt(byte b) {
         return (int) b & 0xFF;

@@ -1,5 +1,6 @@
 package de.sascp.client;
 
+import com.sun.nio.sctp.MessageInfo;
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.*;
 import de.sascp.util.MessageBuilder;
@@ -9,6 +10,7 @@ import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.HashSet;
 
@@ -44,7 +46,12 @@ class ClientProtocolParser implements Runnable {
                 // Headerbyte with specific length
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
-                    parent.sInput.read(headerBytes);
+                    ByteBuffer headerByteBuffer = ByteBuffer.allocate(headerBytes.length);
+                    headerByteBuffer.clear();
+                    parent.channel.receive(headerByteBuffer, null, null);
+                    headerByteBuffer.flip();
+                    headerByteBuffer.get(headerBytes);
+                    //parent.sInput.read(headerBytes);
                 } catch (IOException e) {
                     parent.display("Error reading header bytes - pls do sth");
                     inputFailed = true;
@@ -59,7 +66,7 @@ class ClientProtocolParser implements Runnable {
                     lookingForCommonHeader = false;
                 } else {
                     try {
-                        parent.socket.close();
+                        parent.channel.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -76,6 +83,7 @@ class ClientProtocolParser implements Runnable {
                     HashSet<ClientInformation> clientList = new HashSet<>();
                     // Iterate over each record, represented by message's length
                     for (int i = 1; i <= length; i++) {
+                        ByteBuffer buff;
                         // prepare byte[] for Client's ip, port, usernamelength and reserved bits
                         byte[] recordIP = new byte[4];
                         byte[] recordPort = new byte[2];
@@ -84,10 +92,26 @@ class ClientProtocolParser implements Runnable {
 
                         // read into each byte[] from input stream
                         try {
-                            parent.sInput.read(recordIP);
-                            parent.sInput.read(recordPort);
-                            parent.sInput.read(recordUsernameLength);
-                            parent.sInput.read(recordReserved);
+                            buff = ByteBuffer.allocate(recordIP.length);
+                            parent.channel.receive(buff, null, null);
+                            buff.flip();
+                            buff.get(recordIP);
+                            //parent.sInput.read(recordIP);
+                            buff = ByteBuffer.allocate(recordPort.length);
+                            parent.channel.receive(buff, null, null);
+                            buff.flip();
+                            buff.get(recordPort);
+                            //parent.sInput.read(recordPort);
+                            buff = ByteBuffer.allocate(recordUsernameLength.length);
+                            parent.channel.receive(buff, null, null);
+                            buff.flip();
+                            buff.get(recordUsernameLength);
+                            //parent.sInput.read(recordUsernameLength);
+                            buff = ByteBuffer.allocate(recordReserved.length);
+                            parent.channel.receive(buff, null, null);
+                            buff.flip();
+                            buff.get(recordReserved);
+                            //parent.sInput.read(recordReserved);
                         } catch (IOException e) {
                             parent.display("Error reading payload bytes for UpdateClient Package - this is getting out of hand!");
                             inputFailed = true;
@@ -96,7 +120,11 @@ class ClientProtocolParser implements Runnable {
                         byte[] recordUsername = new byte[recordUsernameLength[0]];
                         // read username from input stream
                         try {
-                            parent.sInput.read(recordUsername);
+                            buff = ByteBuffer.allocate(recordUsername.length);
+                            parent.channel.receive(buff, null, null);
+                            buff.flip();
+                            buff.get(recordUsername);
+                            //parent.sInput.read(recordUsername);
                         } catch (IOException e) {
                             parent.display("Error reading username bytes for UpdateClient Package - fix it, now!");
                             inputFailed = true;
@@ -112,13 +140,13 @@ class ClientProtocolParser implements Runnable {
                         String username = new String(recordUsername);
 
                         // add new ClientInformation to list for updateClient Message
-                        clientList.add(new ClientInformation(ip, intFromTwoBytes(recordPort, 0), username, parent.socket.getInetAddress() == ip));
+                        clientList.add(new ClientInformation(ip, intFromTwoBytes(recordPort, 0), username, Utility.getRemoteAddress(parent.channel) == ip));
                     }
-                    clientList.add(new ClientInformation(parent.socket.getInetAddress(), parent.socket.getPort(), "", true));
+                    clientList.add(new ClientInformation(Utility.getRemoteAddress(parent.channel), Utility.getRemotePort(parent.channel), "", true));
                     // after all the ClientInformation are added, create new updateClient Message and push to parent
                     updateClient updateClient = new updateClient(null, 0, clientList);
-                    updateClient.setSourceIP(parent.socket.getInetAddress());
-                    updateClient.setSourcePort(parent.socket.getPort());
+                    updateClient.setSourceIP(Utility.getRemoteAddress(parent.channel));
+                    updateClient.setSourcePort(Utility.getRemotePort(parent.channel));
                     if (parent.incomingMessageQueue.offer(updateClient)) {
                         parent.display("Update Client List received");
                     } else {
@@ -132,7 +160,11 @@ class ClientProtocolParser implements Runnable {
 
                     // read into byte[] from input stream
                     try {
-                        parent.sInput.read(payload);
+                        ByteBuffer buff = ByteBuffer.allocate(payload.length);
+                        parent.channel.receive(buff, null, null);
+                        buff.flip();
+                        buff.get(payload);
+                        //parent.sInput.read(payload);
                     } catch (IOException e) {
                         parent.display("Error reading payload for non UpdateClient package - git gud");
                         inputFailed = true;
@@ -140,11 +172,11 @@ class ClientProtocolParser implements Runnable {
                     // according to message type put message into incomingMessageQueue for IMH
                     switch (messageType) {
                         case (REQHEARTBEAT): {
-                            InetAddress targetIP = parent.socket.getLocalAddress();
-                            InetAddress sourceIP = parent.socket.getInetAddress();
-                            int targetPort = parent.socket.getPort();
-                            int sourcePort = parent.socket.getLocalPort();
-                            MessageBuilder.buildMessage(new resHeartbeat(targetIP, targetPort, sourceIP, sourcePort), parent.sOutput);
+                            InetAddress targetIP = Utility.getLocalAddress(parent.channel);
+                            InetAddress sourceIP = Utility.getRemoteAddress(parent.channel);
+                            int targetPort = Utility.getRemotePort(parent.channel);
+                            int sourcePort = Utility.getLocalPort(parent.channel);
+                            MessageBuilder.buildMessage(new resHeartbeat(targetIP, targetPort, sourceIP, sourcePort), parent.channel);
                             parent.getHbReceived()[0] = true;
                             break;
                         }
@@ -206,7 +238,7 @@ class ClientProtocolParser implements Runnable {
                 lookingForPayload = false;
                 if (inputFailed) {
                     try {
-                        parent.socket.close();
+                        parent.channel.close();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

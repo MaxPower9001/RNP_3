@@ -2,6 +2,7 @@ package de.sascp.client;
 
 import de.sascp.message.ChatMessage;
 import de.sascp.message.subTypes.*;
+import de.sascp.util.Utility;
 
 import static de.sascp.protocol.Specification.*;
 import static de.sascp.util.Utility.OHSHIT;
@@ -37,7 +38,7 @@ class IncomingMessageHandler implements Runnable {
                     break;
                 case (UPDATECLIENT):
                     updateClient updateClient = (updateClient) currentMessage;
-                    if (updateClient.getSourceIP().equals(parent.socket.getInetAddress())) {
+                    if (updateClient.getSourceIP().equals(Utility.getLocalAddress(parent.channel))) {
                         parent.setConnectedClients(updateClient.getClientInformation());
                     }
                     break;
