@@ -118,10 +118,10 @@ class ClientConnectionListener implements Runnable {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
                     ByteBuffer headerByteBuffer = ByteBuffer.allocate(headerBytes.length);
-                    headerByteBuffer.clear();
                     System.out.println(channel.receive(headerByteBuffer, null, null));
                     headerByteBuffer.flip();
                     headerByteBuffer.get(headerBytes);
+                    headerByteBuffer.clear();
                     //sInput.read(headerBytes);
                 } catch (IOException e) {
                     // TODO connection failed
@@ -147,6 +147,7 @@ class ClientConnectionListener implements Runnable {
                         channel.receive(buff, null, null);
                         buff.flip();
                         buff.get(payload);
+                        buff.clear();
                         //sInput.read(payload);
                     } catch (IOException e) {
                         // TODO connection failed

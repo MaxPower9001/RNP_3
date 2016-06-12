@@ -213,7 +213,6 @@ public class MessageBuilder {
 
     private static void sendMessage(byte[] messageToBeSent, SctpChannel channel) {
         ByteBuffer buf = ByteBuffer.allocate(messageToBeSent.length);
-        buf.clear();
         buf.put(messageToBeSent);
         buf.flip();
         try {

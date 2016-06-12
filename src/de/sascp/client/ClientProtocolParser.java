@@ -47,10 +47,10 @@ class ClientProtocolParser implements Runnable {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
                     ByteBuffer headerByteBuffer = ByteBuffer.allocate(headerBytes.length);
-                    headerByteBuffer.clear();
                     parent.channel.receive(headerByteBuffer, null, null);
                     headerByteBuffer.flip();
                     headerByteBuffer.get(headerBytes);
+                    headerByteBuffer.clear();
                     //parent.sInput.read(headerBytes);
                 } catch (IOException e) {
                     parent.display("Error reading header bytes - pls do sth");
@@ -94,23 +94,26 @@ class ClientProtocolParser implements Runnable {
                         try {
                             buff = ByteBuffer.allocate(recordIP.length);
                             parent.channel.receive(buff, null, null);
-                            buff.flip();
                             buff.get(recordIP);
+                            buff.clear();
                             //parent.sInput.read(recordIP);
                             buff = ByteBuffer.allocate(recordPort.length);
                             parent.channel.receive(buff, null, null);
                             buff.flip();
                             buff.get(recordPort);
+                            buff.clear();
                             //parent.sInput.read(recordPort);
                             buff = ByteBuffer.allocate(recordUsernameLength.length);
                             parent.channel.receive(buff, null, null);
                             buff.flip();
                             buff.get(recordUsernameLength);
+                            buff.clear();
                             //parent.sInput.read(recordUsernameLength);
                             buff = ByteBuffer.allocate(recordReserved.length);
                             parent.channel.receive(buff, null, null);
                             buff.flip();
                             buff.get(recordReserved);
+                            buff.clear();
                             //parent.sInput.read(recordReserved);
                         } catch (IOException e) {
                             parent.display("Error reading payload bytes for UpdateClient Package - this is getting out of hand!");
@@ -124,6 +127,7 @@ class ClientProtocolParser implements Runnable {
                             parent.channel.receive(buff, null, null);
                             buff.flip();
                             buff.get(recordUsername);
+                            buff.clear();
                             //parent.sInput.read(recordUsername);
                         } catch (IOException e) {
                             parent.display("Error reading username bytes for UpdateClient Package - fix it, now!");
@@ -164,6 +168,7 @@ class ClientProtocolParser implements Runnable {
                         parent.channel.receive(buff, null, null);
                         buff.flip();
                         buff.get(payload);
+                        buff.clear();
                         //parent.sInput.read(payload);
                     } catch (IOException e) {
                         parent.display("Error reading payload for non UpdateClient package - git gud");
