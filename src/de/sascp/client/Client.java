@@ -140,7 +140,7 @@ class Client implements ChatProgramm {
         reqLoginTimer.schedule(new TimerTask() {
             @Override
             public void run() {
-                if (connectedClients.isEmpty() || !findOwnUsername()) {
+                if (connectedClients.isEmpty() /*|| !findOwnUsername()*/) {
                     display("Bad Login - maybe try another Username");
                     checkHB.cancel();
                     clientGUI.connectionFailed();

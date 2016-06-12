@@ -164,6 +164,7 @@ public class ClientGUI extends JFrame implements ActionListener {
         if (o == findServer) {
             try {
                 Utility.setBroadcastIP(InetAddress.getByName(tfLocalhost.getText()));
+                Utility.setNetworkMatchingPattern(tfLocalhost.getText());
             } catch (SocketException e1) {
                 e1.printStackTrace();
             } catch (UnknownHostException e1) {

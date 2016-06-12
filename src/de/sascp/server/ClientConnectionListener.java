@@ -118,6 +118,7 @@ class ClientConnectionListener implements Runnable {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
                     ByteBuffer headerByteBuffer = ByteBuffer.allocate(headerBytes.length);
+                    headerByteBuffer.clear();
                     System.out.println(channel.receive(headerByteBuffer, null, null));
                     headerByteBuffer.flip();
                     headerByteBuffer.get(headerBytes);

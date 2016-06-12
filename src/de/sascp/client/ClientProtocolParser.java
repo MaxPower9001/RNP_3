@@ -47,6 +47,7 @@ class ClientProtocolParser implements Runnable {
                 byte[] headerBytes = new byte[CHLENGTH];
                 try {
                     ByteBuffer headerByteBuffer = ByteBuffer.allocate(headerBytes.length);
+                    headerByteBuffer.clear();
                     parent.channel.receive(headerByteBuffer, null, null);
                     headerByteBuffer.flip();
                     headerByteBuffer.get(headerBytes);
@@ -65,6 +66,7 @@ class ClientProtocolParser implements Runnable {
                 if (checkCommonHeader(version, messageType, length) || inputFailed) {
                     lookingForCommonHeader = false;
                 } else {
+                    System.out.println("something wrong with common header");
                     try {
                         parent.channel.close();
                     } catch (IOException e) {
@@ -94,6 +96,7 @@ class ClientProtocolParser implements Runnable {
                         try {
                             buff = ByteBuffer.allocate(recordIP.length);
                             parent.channel.receive(buff, null, null);
+                            buff.flip();
                             buff.get(recordIP);
                             buff.clear();
                             //parent.sInput.read(recordIP);

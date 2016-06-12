@@ -27,6 +27,10 @@ public class Utility {
         networkMatchingPattern = ip.getHostAddress().replaceAll(".*(\\d+\\.\\d+\\.\\d+\\.).*", "$1");
     }
 
+    public static void setNetworkMatchingPattern(String ip) {
+        networkMatchingPattern = ip.replaceAll("[^0-9]*(\\d+\\.\\d+\\.\\d+\\.).*", "$1");
+    }
+
     public static String getNetworkMatchingPattern() {
         return networkMatchingPattern;
     }
@@ -91,7 +95,7 @@ public class Utility {
     public static int getLocalPort(SctpChannel sctpChannel) {
         int localPort = 0;
         try {
-            for(SocketAddress address : sctpChannel.getRemoteAddresses()) {
+            for(SocketAddress address : sctpChannel.getAllLocalAddresses()) {
                 if (address instanceof InetSocketAddress) { // we only care for IP addresses
                     InetSocketAddress inetsocketaddr = (InetSocketAddress) address;
                     if (inetsocketaddr.getAddress().getHostAddress().contains(getNetworkMatchingPattern())) {
@@ -110,7 +114,8 @@ public class Utility {
     public static InetAddress getBroadcastIP() {
         // Workaround weil setBroadcastIP wohl nicht so funktioninert wie es soll
         try {
-            broadcastIP = InetAddress.getByName("255.255.255.255");
+            broadcastIP = InetAddress.getByName("127.255.255.255");
+            //broadcastIP = InetAddress.getByName("255.255.255.255");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
