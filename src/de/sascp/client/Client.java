@@ -147,7 +147,7 @@ class Client implements ChatProgramm {
                 } else {
                     display("Logged in - you did it!");
                     clientGUI.clearText();
-                    startHeartbeatTimer();
+                    //startHeartbeatTimer();
                 }
             }
         }, TIMEOUT);

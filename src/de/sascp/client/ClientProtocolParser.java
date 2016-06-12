@@ -180,8 +180,8 @@ class ClientProtocolParser implements Runnable {
                     // according to message type put message into incomingMessageQueue for IMH
                     switch (messageType) {
                         case (REQHEARTBEAT): {
-                            InetAddress targetIP = Utility.getLocalAddress(parent.channel);
-                            InetAddress sourceIP = Utility.getRemoteAddress(parent.channel);
+                            InetAddress targetIP = Utility.getRemoteAddress(parent.channel);
+                            InetAddress sourceIP = Utility.getLocalAddress(parent.channel);
                             int targetPort = Utility.getRemotePort(parent.channel);
                             int sourcePort = Utility.getLocalPort(parent.channel);
                             MessageBuilder.buildMessage(new resHeartbeat(targetIP, targetPort, sourceIP, sourcePort), parent.channel);

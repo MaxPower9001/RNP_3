@@ -166,7 +166,7 @@ class ClientConnectionListener implements Runnable {
                                 parent.display(username + " added to Clients");
                                 if (parent.incomingMessageQueue.offer(new reqLogin(Utility.getRemoteAddress(channel), username, Utility.getRemotePort(channel)))) {
                                     parent.display("Login Request from: " + Utility.getRemoteAddress(channel).getHostAddress() + ":" + Utility.getRemotePort(channel) + " -> " + username);
-                                    startSendCheckHB(channel,parent,reqHeartbeat);
+                                    //startSendCheckHB(channel,parent,reqHeartbeat);
                                 } else {
                                     parent.display("I was not able to put reqLogin into incoming message queue - forigve me senpai!");
                                 }
